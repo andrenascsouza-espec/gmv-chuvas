@@ -1,0 +1,15 @@
+{
+  "name": "GMV Chuvas Fazenda Matão",
+  "short_name": "GMV Chuvas",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#061a14",
+  "theme_color": "#062216",
+  "icons": [
+    {
+      "src": "icone.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

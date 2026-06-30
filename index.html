@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GMV Chuvas - Fazenda Matão</title>
+  <meta name="theme-color" content="#062216" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icone.svg" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQHIPTcXx6R5G1v1a3Wb4M6HBESjVnQ=" crossorigin="" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand"><img src="assets/logo.svg" alt="GMV"><div><strong>GMV Chuvas</strong><small>Fazenda Matão • Safra 26/27</small></div></div>
+      <button class="nav active" data-view="dashboard">🏠 Dashboard</button>
+      <button class="nav" data-view="lancar">🌧️ Lançar chuva</button>
+      <button class="nav" data-view="historico">📋 Histórico</button>
+      <button class="nav" data-view="graficos">📊 Gráficos</button>
+      <button class="nav" data-view="config">⚙️ Configurações</button>
+      <div class="hint"><b>Versão limpa v1.0</b><br>Base nova, sem arquivos antigos.</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div><h1>Controle de Chuvas por Talhão</h1><p>Mapa real da Fazenda Matão. Clique no talhão para lançar chuva.</p></div>
+        <div class="actions"><button id="btnExport">Exportar Excel/CSV</button><button id="btnBackup">Backup</button><button class="primary" id="btnOpenForm">+ Lançar chuva</button></div>
+      </header>
+
+      <section id="dashboard" class="view active grid">
+        <div class="map-card card">
+          <div class="map-tools">
+            <select id="talhaoFiltro"><option value="todos">Todos os talhões</option></select>
+            <input id="buscaTalhao" placeholder="Buscar talhão..." />
+            <button id="btnCentralizar">Ver todos</button>
+          </div>
+          <div id="map"></div>
+        </div>
+
+        <aside class="panel">
+          <div class="card form-card" id="formCard">
+            <h2>🌧️ Lançar chuva</h2>
+            <div class="form-grid">
+              <label>Talhão<select id="talhaoInput"></select></label>
+              <label>Data<input type="date" id="dataInput"></label>
+              <label>Chuva (mm)<input type="number" step="0.1" min="0" id="chuvaInput" placeholder="Ex: 18.5"></label>
+              <label>Responsável<select id="respInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></label>
+            </div>
+            <label>Observação<textarea id="obsInput" placeholder="Opcional"></textarea></label>
+            <button class="primary full" id="btnSalvar">Salvar lançamento</button>
+            <div id="status"></div>
+          </div>
+
+          <div class="card">
+            <h2>📋 Resumo por talhão</h2>
+            <div class="table-wrap"><table id="resumoTable"><thead><tr><th>Talhão</th><th>Hoje</th><th>Mês</th><th>Safra</th><th>Última</th></tr></thead><tbody></tbody></table></div>
+          </div>
+
+          <div class="card selected-card">
+            <h2>Talhão selecionado</h2>
+            <div id="selectedInfo">Clique em um talhão no mapa.</div>
+          </div>
+        </aside>
+      </section>
+
+      <section id="lancar" class="view"><div class="card wide"><h2>Lançar chuva</h2><p>Use o formulário à direita ou clique em um talhão no mapa.</p></div></section>
+      <section id="historico" class="view"><div class="card wide"><h2>Histórico</h2><div class="table-wrap"><table id="histTable"><thead><tr><th>Data</th><th>Talhão</th><th>Chuva</th><th>Responsável</th><th>Obs.</th><th></th></tr></thead><tbody></tbody></table></div></div></section>
+      <section id="graficos" class="view"><div class="card wide"><h2>Gráfico por talhão</h2><canvas id="chart" width="900" height="360"></canvas></div></section>
+      <section id="config" class="view"><div class="card wide"><h2>Configurações e backup</h2><p>Os dados ficam salvos neste aparelho/navegador.</p><button id="btnRestore">Restaurar backup JSON</button><input type="file" id="restoreFile" accept="application/json" hidden><button class="danger" id="btnClear">Apagar todos os lançamentos</button></div></section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="js/talhoes.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
