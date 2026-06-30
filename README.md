@@ -1,12 +1,3 @@
-# GMV Chuvas v10
+# GMV Chuvas v11
 
-Versão com o arquivo KML real incluído.
-
-Arquivos importantes:
-- index.html
-- manifest.json
-- icone.svg
-- kml/FMatao2526.kml
-- FMatao2526.kml
-
-Para atualizar no GitHub, arraste TODOS esses arquivos e a pasta kml.
+Versão final com talhões reais embutidos no index.html. Não depende de KML externo para carregar o mapa.

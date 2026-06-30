@@ -3,8 +3,8 @@
   "short_name": "GMV Chuvas",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#071813",
-  "theme_color": "#0b3029",
+  "background_color": "#061813",
+  "theme_color": "#052e1d",
   "icons": [
     {
       "src": "icone.svg",
