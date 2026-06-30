@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GMV Chuvas</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px}
+.card{max-width:700px;margin:auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+h1{color:#caa300}
+input,button{padding:10px;font-size:16px;margin:6px 0}
+table{width:100%;border-collapse:collapse;margin-top:15px}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+button{background:#caa300;color:#fff;border:none;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>GMV Chuvas - Talhão 3B</h1>
+<label>Data</label><br>
+<input type="date" id="data"><br>
+<label>Chuva (mm)</label><br>
+<input type="number" id="mm" placeholder="Ex: 25"><br>
+<button onclick="salvar()">Salvar</button>
+<h3>Histórico</h3>
+<table>
+<thead><tr><th>Data</th><th>mm</th></tr></thead>
+<tbody id="hist"></tbody>
+</table>
+<p><b>Total:</b> <span id="total">0</span> mm</p>
+</div>
+<script>
+let dados=JSON.parse(localStorage.getItem('gmv3b')||'[]');
+function render(){
+ let tb=document.getElementById('hist');
+ tb.innerHTML='';
+ let t=0;
+ dados.forEach(r=>{
+   t+=Number(r.mm);
+   tb.innerHTML+=`<tr><td>${r.data}</td><td>${r.mm}</td></tr>`;
+ });
+ document.getElementById('total').textContent=t;
+}
+function salvar(){
+ let d=document.getElementById('data').value;
+ let mm=document.getElementById('mm').value;
+ if(!d||!mm){alert('Preencha os campos');return;}
+ dados.push({data:d,mm:mm});
+ localStorage.setItem('gmv3b',JSON.stringify(dados));
+ document.getElementById('mm').value='';
+ render();
+}
+render();
+</script>
+</body>
+</html>
