@@ -1,3 +1,2 @@
-# GMV Chuvas v7 Estável
-
-Versão estável com 11 talhões aproximados, resumo por talhão, histórico, gráfico simples, exportação CSV e backup JSON.
+# GMV Chuvas v3
+Atualização: resumo por talhão, 4A/4B/4C unificados, 11 talhões.
