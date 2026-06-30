@@ -1,5 +1,3 @@
-# GMV Chuvas v5
+# GMV Chuvas v7 Estável
 
-Versão com 11 talhões aproximados pela foto, resumo por talhão e funcionamento no GitHub Pages.
-
-Arquivos necessários: index.html, manifest.json, icon.svg, sw.js.
+Versão estável com 11 talhões aproximados, resumo por talhão, histórico, gráfico simples, exportação CSV e backup JSON.
