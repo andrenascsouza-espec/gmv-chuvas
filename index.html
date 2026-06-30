@@ -1,55 +1,58 @@
 <!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#062b1a" />
-  <title>GMV Chuvas - Fazenda Matão</title>
-  <link rel="manifest" href="./manifest.json" />
-  <link rel="icon" href="./icone.svg" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIINfQBNru8zHMd4NUzqYrD1QtIjnASM0rw=" crossorigin="" />
-  <link rel="stylesheet" href="./estilo.css" />
-</head>
-<body>
-<div id="app">
-  <aside class="sidebar">
-    <div class="brand"><img src="./assets/logo.svg" alt="GMV"><div><b>GMV Chuvas</b><span>Fazenda Matão • Safra 26/27</span></div></div>
-    <button class="nav active" data-page="dashboard">🏠 Dashboard</button>
-    <button class="nav" data-page="lancar">🌧️ Lançar chuva</button>
-    <button class="nav" data-page="talhoes">🗺️ Talhões</button>
-    <button class="nav" data-page="historico">📋 Histórico</button>
-    <button class="nav" data-page="graficos">📊 Gráficos</button>
-    <button class="nav" data-page="config">⚙️ Configurações</button>
-    <div class="safra"><small>Safra atual</small><b>2026/2027</b></div>
-  </aside>
-  <main class="main">
-    <header class="topbar">
-      <div><h1>Controle de Chuvas por Talhão</h1><p>Mapa real da Fazenda Matão. Clique no talhão para lançar chuva.</p></div>
-      <div class="top-actions"><button id="btnExport">Exportar Excel/CSV</button><button id="btnBackup">Backup</button><button class="primary" id="btnQuick">+ Lançar chuva</button></div>
-    </header>
-    <section class="grid">
-      <div class="map-card">
-        <div class="map-tools"><select id="filtroTalhao"><option value="todos">Todos os talhões</option></select><input id="busca" placeholder="Buscar talhão..."/><button id="btnVerTodos">Ver todos</button></div>
-        <div id="map"></div>
-      </div>
-      <aside class="panel">
-        <form id="formChuva" class="card">
-          <h2>🌧️ Lançar chuva</h2>
-          <div class="formgrid"><label>Talhão<select id="talhaoInput" required></select></label><label>Data<input id="dataInput" type="date" required></label><label>Chuva (mm)<input id="chuvaInput" type="number" step="0.1" min="0" placeholder="Ex: 18.5" required></label><label>Responsável<select id="responsavelInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></label></div>
-          <label>Observação<textarea id="obsInput" placeholder="Opcional"></textarea></label>
-          <button type="submit" class="primary full">Salvar lançamento</button><div id="msg" class="msg"></div>
-        </form>
-        <div class="card resumo"><h2>📋 Resumo por talhão</h2><div class="table-wrap"><table id="resumoTabela"><thead><tr><th>Talhão</th><th>Hoje</th><th>Mês</th><th>Safra</th><th>Última</th></tr></thead><tbody></tbody></table></div></div>
-        <div class="card selected"><h2>Talhão selecionado</h2><div id="selectedInfo">Clique em um talhão no mapa.</div></div>
-      </aside>
-    </section>
-    <section id="historico" class="card wide"><h2>📋 Últimos lançamentos</h2><div class="table-wrap"><table id="histTabela"><thead><tr><th>Data</th><th>Talhão</th><th>Chuva</th><th>Resp.</th><th>Obs.</th><th></th></tr></thead><tbody></tbody></table></div></section>
-    <section id="graficos" class="card wide"><h2>📊 Gráfico mensal por talhão</h2><canvas id="grafico" height="130"></canvas></section>
-    <section id="config" class="card wide"><h2>⚙️ Configurações</h2><p>Os dados ficam salvos neste navegador/celular. Use backup para guardar ou transferir.</p><div class="config-actions"><button id="btnRestore">Restaurar backup JSON</button><input id="restoreFile" type="file" accept="application/json" hidden><button class="danger" id="btnLimpar">Limpar dados</button></div></section>
-  </main>
-</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script src="./talhoes.js"></script>
-<script src="./app.js"></script>
-</body>
-</html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>GMV Chuvas • Fazenda Matão</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#0b2f24">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root{--bg:#071b16;--panel:#0c2a22;--panel2:#12392e;--line:#225346;--text:#eefaf5;--muted:#a9c8bc;--green:#2fe07d;--yellow:#ffd34d;--red:#ef5b5b;--blue:#5cc8ff}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.app{height:100vh;display:grid;grid-template-columns:260px 1fr 420px;gap:12px;padding:12px;overflow:hidden}.card{background:linear-gradient(180deg,var(--panel),#081f1a);border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 45px #0006;overflow:hidden}.sidebar{padding:18px}.brand{display:flex;gap:10px;align-items:center;margin-bottom:20px}.logo{width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,var(--green),var(--yellow));display:grid;place-items:center;font-weight:900;color:#062018}.brand h1{font-size:18px;margin:0}.brand p{font-size:12px;color:var(--muted);margin:2px 0 0}.nav button{width:100%;border:0;background:transparent;color:var(--text);text-align:left;padding:13px 12px;border-radius:14px;margin:4px 0;font-size:15px}.nav button.active,.nav button:hover{background:#ffffff12}.status{margin-top:16px;padding:14px;border-radius:16px;background:#ffffff0d;border:1px solid #ffffff15;font-size:13px;color:var(--muted)}
+.mapwrap{position:relative}.topbar{position:absolute;z-index:1000;left:18px;right:18px;top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.pill{background:#081f1add;border:1px solid #ffffff24;backdrop-filter:blur(8px);border-radius:999px;padding:10px 14px;color:var(--text);box-shadow:0 12px 30px #0005}select,input,textarea{background:#08221b;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px;width:100%;font-size:15px}button.primary{background:linear-gradient(135deg,var(--green),#1dbf66);color:#042016;border:0;border-radius:13px;padding:12px 14px;font-weight:800;cursor:pointer}button.secondary{background:#ffffff12;color:var(--text);border:1px solid #ffffff22;border-radius:13px;padding:12px 14px;font-weight:700;cursor:pointer}#map{height:100%;width:100%;background:#102720}.right{display:flex;flex-direction:column;gap:12px;overflow:auto;padding-right:3px}.panel{padding:16px}.panel h2{margin:0 0 10px;font-size:18px}.panel h3{margin:12px 0 8px;font-size:15px;color:var(--yellow)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.metric{background:#ffffff0d;border:1px solid #ffffff14;border-radius:16px;padding:12px}.metric b{font-size:22px;color:var(--yellow)}.metric span{display:block;font-size:12px;color:var(--muted)}.summary{width:100%;border-collapse:collapse;font-size:13px}.summary th,.summary td{padding:8px;border-bottom:1px solid #ffffff12;text-align:right}.summary th:first-child,.summary td:first-child{text-align:left}.tag{display:inline-block;padding:3px 8px;border-radius:999px;background:#ffffff12}.list{max-height:190px;overflow:auto}.item{padding:10px;border-bottom:1px solid #ffffff12;font-size:13px;color:var(--muted)}.item b{color:#fff}.leaflet-popup-content-wrapper{background:#0b2a22;color:white;border-radius:14px}.leaflet-popup-tip{background:#0b2a22}.field-label{color:#fff;font-weight:900;text-shadow:0 2px 4px #000,0 0 8px #000;font-size:13px}.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#06251d;color:#fff;padding:12px 18px;border-radius:999px;border:1px solid #2fe07d88;z-index:9999;display:none}
+@media(max-width:1050px){.app{grid-template-columns:1fr;height:auto;min-height:100vh;overflow:auto}.sidebar{display:none}.mapwrap{height:62vh}.right{overflow:visible}.topbar{position:absolute}.card{border-radius:18px}.summary{font-size:12px}}
+</style></head><body>
+<div class="app">
+ <aside class="card sidebar"><div class="brand"><div class="logo">GMV</div><div><h1>GMV Chuvas</h1><p>Fazenda Matão • Safra 26/27</p></div></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v5</b><br>Mapa aproximado pela foto.<br>Quando tiver KML real, substituímos sem perder lançamentos.</div></aside>
+ <main class="card mapwrap"><div class="topbar"><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="csvBtn">Excel/CSV</button></div><div id="map"></div></main>
+ <section class="right">
+  <div class="card panel"><h2 id="selectedTitle">Lançar chuva</h2><div class="grid2"><div><label>Talhão</label><select id="fieldSelect"></select></div><div><label>Data</label><input id="dateInput" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Chuva (mm)</label><input id="mmInput" type="number" step="0.1" min="0" placeholder="Ex: 18"></div><div><label>Responsável</label><select id="respInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="obsInput" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveBtn">Salvar chuva</button><button class="secondary" id="clearBtn">Limpar dados</button></div></div>
+  <div class="card panel"><h2>Resumo por talhão</h2><table class="summary"><thead><tr><th>Talhão</th><th>Hoje</th><th>Mês</th><th>Safra</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
+  <div class="card panel"><h2>Talhão selecionado</h2><div class="grid2"><div class="metric"><span>Hoje</span><b id="mHoje">0</b> mm</div><div class="metric"><span>Mês</span><b id="mMes">0</b> mm</div><div class="metric"><span>Safra</span><b id="mSafra">0</b> mm</div><div class="metric"><span>Última chuva</span><b id="mUltima" style="font-size:16px">--</b></div></div></div>
+  <div class="card panel"><h2>Últimos lançamentos</h2><div class="list" id="historyList"></div></div>
+ </section>
+</div><div class="toast" id="toast"></div>
+<script>
+const FIELDS = [{"name": "Sede", "area": "130 ha", "coords": [[-10.7147, -52.7749], [-10.7151, -52.7678], [-10.7229, -52.768], [-10.7231, -52.7745]]}, {"name": "1A", "area": "--", "coords": [[-10.6955, -52.807], [-10.6962, -52.789], [-10.7098, -52.7895], [-10.7108, -52.8075]]}, {"name": "1B", "area": "--", "coords": [[-10.7112, -52.8074], [-10.71, -52.7896], [-10.7245, -52.79], [-10.7247, -52.808]]}, {"name": "1C", "area": "--", "coords": [[-10.7249, -52.8078], [-10.7247, -52.79], [-10.738, -52.7908], [-10.7385, -52.8085]]}, {"name": "2A", "area": "--", "coords": [[-10.699, -52.7887], [-10.6998, -52.775], [-10.7145, -52.7752], [-10.714, -52.7892]]}, {"name": "2B", "area": "--", "coords": [[-10.7145, -52.7892], [-10.7147, -52.7753], [-10.73, -52.7755], [-10.73, -52.7897]]}, {"name": "3A", "area": "--", "coords": [[-10.7302, -52.7898], [-10.73, -52.7755], [-10.7438, -52.776], [-10.7445, -52.7906]]}, {"name": "3B", "area": "--", "coords": [[-10.7445, -52.7906], [-10.7439, -52.776], [-10.7582, -52.7768], [-10.7587, -52.7912]]}, {"name": "4A", "area": "--", "coords": [[-10.7244, -52.7729], [-10.7249, -52.7542], [-10.7354, -52.7548], [-10.7353, -52.7728]]}, {"name": "4B", "area": "--", "coords": [[-10.7309, -52.7586], [-10.7312, -52.7338], [-10.7435, -52.734], [-10.7434, -52.7588]]}, {"name": "4C", "area": "--", "coords": [[-10.7323, -52.7324], [-10.7326, -52.7236], [-10.7379, -52.7238], [-10.7377, -52.7324]]}];
+const storeKey='gmv_chuvas_v5';
+let records=JSON.parse(localStorage.getItem(storeKey)||'[]');
+let selected=FIELDS[0].name; let layers={};
+const today=new Date().toISOString().slice(0,10); dateInput.value=today;
+function saveStore(){localStorage.setItem(storeKey,JSON.stringify(records))}
+function sum(filter){return records.filter(filter).reduce((a,r)=>a+Number(r.mm||0),0)}
+function monthOf(d){return d.slice(0,7)}
+function brDate(d){return (d||'').split('-').reverse().join('/')}
+function toast(t){const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',2200)}
+function fieldColor(i){return ['#2fe07d','#ffd34d','#5cc8ff','#ff8a4c','#b77bff','#72e3d5','#f4a261','#9be564','#ff6b9a','#56ccf2','#e5ff5c'][i%11]}
+const map=L.map('map',{zoomControl:true}).setView([-10.735,-52.765],13);
+const sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles © Esri'}).addTo(map);
+const osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'});
+L.control.layers({'Satélite':sat,'Mapa':osm}).addTo(map);
+const group=L.featureGroup().addTo(map);
+function selectField(name, zoom=false){selected=name; fieldSelect.value=name; fieldFilter.value=name; selectedTitle.textContent='Lançar chuva • '+name; Object.entries(layers).forEach(([n,l])=>l.setStyle({weight:n==name?4:2,fillOpacity:n==name?.35:.20})); if(zoom&&layers[name]) map.fitBounds(layers[name].getBounds(),{padding:[35,35]}); refresh();}
+FIELDS.forEach((f,i)=>{ const poly=L.polygon(f.coords,{color:fieldColor(i),fillColor:fieldColor(i),fillOpacity:.20,weight:2}).addTo(group); layers[f.name]=poly; poly.bindTooltip(f.name,{permanent:true,direction:'center',className:'field-label'}); poly.on('click',()=>{selectField(f.name,false); poly.bindPopup(`<b>${f.name}</b><br>Área: ${f.area}<br><button onclick="quickLaunch('${f.name}')" style="margin-top:8px;padding:8px;border-radius:10px;border:0;background:#2fe07d;font-weight:800">Lançar chuva</button>`).openPopup();});});
+function quickLaunch(n){selectField(n,false); document.getElementById('mmInput').focus()}
+map.fitBounds(group.getBounds(),{padding:[20,20]});
+[fieldSelect,fieldFilter].forEach(sel=>{ sel.innerHTML=FIELDS.map(f=>`<option>${f.name}</option>`).join(''); sel.onchange=()=>selectField(sel.value,true);});
+fitBtn.onclick=()=>map.fitBounds(group.getBounds(),{padding:[20,20]});
+saveBtn.onclick=()=>{const mm=parseFloat(mmInput.value); if(!mm && mm!==0){toast('Digite a chuva em mm');return} records.push({field:fieldSelect.value,date:dateInput.value||today,mm,resp:respInput.value,obs:obsInput.value,ts:new Date().toISOString()}); saveStore(); mmInput.value=''; obsInput.value=''; selectField(fieldSelect.value,false); toast('Chuva salva para '+fieldSelect.value)};
+clearBtn.onclick=()=>{if(confirm('Apagar todos os lançamentos salvos neste aparelho?')){records=[];saveStore();refresh();toast('Dados apagados')}};
+backupBtn.onclick=()=>download('backup_gmv_chuvas.json',JSON.stringify(records,null,2),'application/json');
+csvBtn.onclick=()=>{let csv='data,talhao,mm,responsavel,observacao\n'+records.map(r=>[r.date,r.field,r.mm,r.resp,(r.obs||'').replaceAll(';',',')].join(';')).join('\n'); download('gmv_chuvas.csv',csv,'text/csv')};
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
+function refresh(){const mes=monthOf(dateInput.value||today); summaryBody.innerHTML=''; FIELDS.forEach(f=>{const h=sum(r=>r.field==f.name&&r.date==(dateInput.value||today)); const m=sum(r=>r.field==f.name&&monthOf(r.date)==mes); const s=sum(r=>r.field==f.name); summaryBody.innerHTML+=`<tr onclick="selectField('${f.name}',true)" style="cursor:pointer"><td><span class="tag">${f.name}</span></td><td>${h.toFixed(1)}</td><td>${m.toFixed(1)}</td><td>${s.toFixed(1)}</td></tr>`;});
+ mHoje.textContent=sum(r=>r.field==selected&&r.date==(dateInput.value||today)).toFixed(1); mMes.textContent=sum(r=>r.field==selected&&monthOf(r.date)==mes).toFixed(1); mSafra.textContent=sum(r=>r.field==selected).toFixed(1); let last=records.filter(r=>r.field==selected).sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts))[0]; mUltima.textContent=last?brDate(last.date):'--'; historyList.innerHTML=records.slice().sort((a,b)=>b.ts.localeCompare(a.ts)).slice(0,25).map(r=>`<div class="item"><b>${r.field}</b> • ${brDate(r.date)} • <b>${Number(r.mm).toFixed(1)} mm</b><br>${r.resp||''} ${r.obs?'• '+r.obs:''}</div>`).join('')||'<div class="item">Nenhum lançamento ainda.</div>';}
+dateInput.onchange=refresh; selectField('Sede',false);
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body></html>

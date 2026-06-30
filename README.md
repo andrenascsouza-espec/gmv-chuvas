@@ -1,18 +1,5 @@
-# GMV Chuvas - Fazenda Matão
+# GMV Chuvas v5
 
-Projeto limpo e funcional para GitHub Pages.
+Versão com 11 talhões aproximados pela foto, resumo por talhão e funcionamento no GitHub Pages.
 
-## Como publicar
-Envie todos os arquivos da pasta para a raiz do repositório `gmv-chuvas`.
-
-Arquivos principais:
-- `index.html`
-- `estilo.css`
-- `app.js`
-- `talhoes.js`
-- `manifest.json`
-- `icone.svg`
-- `assets/logo.svg`
-- `kml/FMatao2526.kml`
-
-Depois abra: https://andrenascsouza-espec.github.io/gmv-chuvas/
+Arquivos necessários: index.html, manifest.json, icon.svg, sw.js.
