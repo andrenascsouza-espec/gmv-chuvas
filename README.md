@@ -1,3 +1,3 @@
-# GMV Chuvas v12
+# GMV Chuvas v7 Estável
 
-Versão definitiva com GeoJSON embutido do KML real da Fazenda Matão.
+Versão estável com 11 talhões aproximados, resumo por talhão, histórico, gráfico simples, exportação CSV e backup JSON.
