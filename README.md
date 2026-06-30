@@ -1,3 +1,3 @@
-# GMV Chuvas v11
+# GMV Chuvas v12
 
-Versão final com talhões reais embutidos no index.html. Não depende de KML externo para carregar o mapa.
+Versão definitiva com GeoJSON embutido do KML real da Fazenda Matão.
