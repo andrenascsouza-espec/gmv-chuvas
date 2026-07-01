@@ -5,6 +5,9 @@
 <link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" type="image/png" href="favicon.png"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
 <style>
 :root{--bg:#071b16;--panel:#0c2a22;--panel2:#12392e;--line:#225346;--text:#eefaf5;--muted:#a9c8bc;--green:#2fe07d;--yellow:#ffd34d;--red:#ef5b5b;--blue:#5cc8ff}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -17,8 +20,8 @@
 @media print{.sidebar,.topbar,#map,.mapwrap{display:none!important}.app{display:block;height:auto;overflow:visible}.right{display:block}.card{box-shadow:none;border:1px solid #ccc;background:white!important;color:#111!important;margin:10px 0}.panel h2,.panel h3,.metric b{color:#111!important}.item,.metric span{color:#333!important}}
 </style></head><body>
 <div class="app">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg" alt="Logo GMV"><h1>GMV Gestão</h1><p>Chuvas e Plantio • Safra 26/27</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v11 com Plantio</b><br>Mapa atualizado por KML.<br>Talhões reais da Fazenda Matão.</div></aside>
- <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg" alt="Logo GMV"><h1>GMV Gestão</h1><p>Chuvas e Plantio • Safra 26/27</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v12 Online</b><br>Chuvas + Plantio sincronizados.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secLancamento"><h2 id="selectedTitle">Lançar chuva</h2><div class="grid2"><div><label>Talhão</label><select id="fieldSelect"></select></div><div><label>Data</label><input id="dateInput" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Chuva (mm)</label><input id="mmInput" type="number" step="0.1" min="0" placeholder="Ex: 18"></div><div><label>Responsável</label><select id="respInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="obsInput" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveBtn">Salvar chuva</button><button class="secondary" id="clearBtn">Limpar dados</button></div></div>
 
@@ -38,7 +41,43 @@ const plantKey='gmv_plantio_v1';
 let plantios=JSON.parse(localStorage.getItem(plantKey)||'[]');
 let selected=FIELDS[0].name; let layers={};
 const today=new Date().toISOString().slice(0,10); dateInput.value=today;
-function saveStore(){localStorage.setItem(storeKey,JSON.stringify(records)); localStorage.setItem(plantKey,JSON.stringify(plantios))}
+
+let db=null, syncRef=null, remoteReady=false, applyingRemote=false;
+function saveStore(upload=true){
+  localStorage.setItem(storeKey,JSON.stringify(records));
+  localStorage.setItem(plantKey,JSON.stringify(plantios));
+  if(upload && remoteReady && syncRef && !applyingRemote){
+    syncRef.set({records, plantios, updatedAt:new Date().toISOString()}).catch(()=>setSync(false,'Erro ao enviar'));
+  }
+}
+function setSync(ok,msg){
+  const t=ok?'🟢 Online':'🔴 '+(msg||'Local');
+  const a=document.getElementById('syncStatus'); if(a) a.textContent=t;
+  const b=document.getElementById('syncStatusSide'); if(b) b.textContent=ok?'Online: atualiza em todos aparelhos':(msg||'Modo local: sem internet/configuração');
+}
+function setupSync(){
+  try{
+    const cfg=window.GMV_FIREBASE_CONFIG||{};
+    if(!cfg.apiKey || String(cfg.apiKey).includes('COLE_')){setSync(false,'Local');return;}
+    firebase.initializeApp(cfg);
+    db=firebase.database();
+    syncRef=db.ref('fazendas/matao/gmv_gestao');
+    syncRef.on('value',snap=>{
+      const data=snap.val();
+      if(!data){ syncRef.set({records,plantios,updatedAt:new Date().toISOString()}); return; }
+      applyingRemote=true;
+      records=Array.isArray(data.records)?data.records:[];
+      plantios=Array.isArray(data.plantios)?data.plantios:[];
+      saveStore(false);
+      applyingRemote=false;
+      refresh();
+      setSync(true);
+    },()=>setSync(false,'Sem conexão'));
+    window.addEventListener('online',()=>setSync(true));
+    window.addEventListener('offline',()=>setSync(false,'Sem internet'));
+  }catch(e){setSync(false,'Local');}
+}
+
 function sum(filter){return records.filter(filter).reduce((a,r)=>a+Number(r.mm||0),0)}
 function monthOf(d){return d.slice(0,7)}
 function brDate(d){return (d||'').split('-').reverse().join('/')}
@@ -98,6 +137,7 @@ document.querySelectorAll('.nav button').forEach((b,i)=>{
 function quickLaunch(n){selectField(n,false); goSection('secLancamento'); setTimeout(()=>document.getElementById('mmInput').focus(),350)}
 updateHarvestPreview();
 selectField('Sede',false);
+setupSync();
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
 </body></html>
