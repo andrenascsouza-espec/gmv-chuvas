@@ -1,7 +1,7 @@
 {
   "name": "GMV Chuvas Fazenda Matão",
   "short_name": "GMV Chuvas",
-  "start_url": "./index.html",
+  "version":"14","start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
