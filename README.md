@@ -1,16 +1,10 @@
-GMV Gestão v13 - Firestore Sync
+GMV Gestão V15 - sincronização corrigida
 
-Esta versão usa Cloud Firestore para sincronizar chuvas e plantio entre celular, computador e colaboradores.
+Correções:
+- Firebase/Firestore agora envia as alterações salvas no celular/computador.
+- Botão Limpar dados agora sincroniza a limpeza para todos os aparelhos.
+- Cache do iPhone/GitHub forçado para não voltar versão antiga.
+- Mantém logo GMV, mapas KML, chuvas, plantio e previsão de colheita.
 
-IMPORTANTE: no Firebase, ajuste as regras do Firestore para permitir leitura/gravação enquanto estiver sem login:
-
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /fazendas/matao/{document=**} {
-      allow read, write: if true;
-    }
-  }
-}
-
-Depois publique esta pasta no GitHub Pages.
+Para atualizar no GitHub: substitua todos os arquivos do repositório por estes arquivos.
+Depois apague o app antigo da tela inicial do iPhone e adicione novamente pelo Safari.
