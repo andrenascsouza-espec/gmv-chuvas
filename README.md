@@ -1,4 +1,1 @@
-GMV Chuvas - Fazenda Matão
-
-Versão V6 com logo dourada GMV e KML completos na pasta kml.
-Abra o index.html ou envie todos os arquivos para o GitHub Pages.
+GMV Chuvas V10 - menu embaixo + ícone oficial dourado para instalar como app no iPhone/Android.
