@@ -1,16 +1,11 @@
-GMV Gestão V16 - exclusão individual com senha
+GMV Gestão V17 - Operações
 
-Correções:
-- Firebase/Firestore agora envia as alterações salvas no celular/computador.
-- Botão Limpar dados agora sincroniza a limpeza para todos os aparelhos.
-- Cache do iPhone/GitHub forçado para não voltar versão antiga.
-- Mantém logo GMV, mapas KML, chuvas, plantio e previsão de colheita.
+Novidade:
+- Mantém Chuvas e Plantio como estavam.
+- Adiciona nova aba Operações.
+- Registra área adubada, escarificada, gradeada, subsolada, pulverizada, plantada e colhida.
+- Sincroniza operações no Firebase junto com o restante.
+- Exporta operações no CSV.
+- Excluir operação individual pede senha 1234.
 
-Para atualizar no GitHub: substitua todos os arquivos do repositório por estes arquivos.
-Depois apague o app antigo da tela inicial do iPhone e adicione novamente pelo Safari.
-
-
-## V16
-- Botão Limpar campos não apaga mais a safra.
-- Cada lançamento no histórico tem Editar e Apagar.
-- Para apagar um lançamento, pede senha 1234 e remove somente aquele registro.
+Para atualizar no GitHub: substitua todos os arquivos do repositório por estes arquivos e faça commit. Depois apague o app antigo da tela inicial do iPhone e adicione novamente pelo Safari.
