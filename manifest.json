@@ -1,7 +1,7 @@
 {
-  "name": "GMV Gestão Fazenda Matão",
-  "short_name": "GMV Gestão",
-  "start_url": "./index.html?v=17",
+  "name": "GMV Chuvas Fazenda Matão",
+  "short_name": "GMV Chuvas",
+  "start_url": "./index.html?v=15",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
