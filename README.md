@@ -1,12 +1,16 @@
-GMV Gestão v12 Online
+GMV Gestão v13 - Firestore Sync
 
-Esta versão mantém o app simples, mas está pronta para sincronizar chuvas e plantio entre iPhone, computador e colaboradores usando Firebase Realtime Database.
+Esta versão usa Cloud Firestore para sincronizar chuvas e plantio entre celular, computador e colaboradores.
 
-Para ativar:
-1. Criar projeto no Firebase.
-2. Ativar Realtime Database.
-3. Criar App Web no Firebase.
-4. Copiar as credenciais para firebase-config.js.
-5. Subir todos os arquivos no GitHub/Netlify.
+IMPORTANTE: no Firebase, ajuste as regras do Firestore para permitir leitura/gravação enquanto estiver sem login:
 
-Sem configurar o Firebase, o app continua funcionando localmente no aparelho.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /fazendas/matao/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+Depois publique esta pasta no GitHub Pages.
