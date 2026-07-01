@@ -118,6 +118,23 @@ function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
 function sum(filter){return scopedRecords().filter(filter).reduce((a,r)=>a+Number(r.mm||0),0)}
+// Chuva da fazenda não deve somar mm de todos os talhões.
+// Para totais gerais, o sistema soma a MÉDIA diária dos talhões lançados.
+function avgMm(filter){
+ const arr=scopedRecords().filter(filter);
+ if(!arr.length) return 0;
+ return arr.reduce((a,r)=>a+Number(r.mm||0),0)/arr.length;
+}
+function chuvaMediaAcumulada(filter){
+ const porData={};
+ scopedRecords().filter(filter).forEach(r=>{
+  (porData[r.date] ||= []).push(Number(r.mm||0));
+ });
+ return Object.values(porData).reduce((total,arr)=>total+(arr.reduce((a,b)=>a+b,0)/arr.length),0);
+}
+function chuvaMediaDia(data){return avgMm(r=>r.date===data)}
+function chuvaMediaMes(ym){return chuvaMediaAcumulada(r=>monthOf(r.date)===ym)}
+function chuvaMediaSafra(){return chuvaMediaAcumulada(()=>true)}
 function monthOf(d){return d.slice(0,7)}
 function brDate(d){return (d||'').split('-').reverse().join('/')}
 function toast(t){const el=document.getElementById('toast'); el.textContent=t; el.style.display='block'; setTimeout(()=>el.style.display='none',2200)}
@@ -147,8 +164,8 @@ function drawBarChart(canvasId, labels, values){
  const c=document.getElementById(canvasId); if(!c) return; const ctx=c.getContext('2d'); const w=c.width=c.clientWidth*devicePixelRatio; const h=c.height=c.clientHeight*devicePixelRatio; ctx.clearRect(0,0,w,h); ctx.scale(devicePixelRatio,devicePixelRatio); const W=c.clientWidth,H=c.clientHeight,p=28; const max=Math.max(1,...values); ctx.font='11px Arial'; ctx.fillStyle='#a9c8bc'; ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1; for(let i=0;i<4;i++){let y=p+(H-p*1.5)*i/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-8,y); ctx.stroke();}
  const bw=(W-p-16)/labels.length; values.forEach((v,i)=>{let bh=(H-p*2)*v/max; let x=p+i*bw+2; let y=H-p-bh; const grad=ctx.createLinearGradient(0,y,0,H-p); grad.addColorStop(0,'#ffd34d'); grad.addColorStop(1,'#2fe07d'); ctx.fillStyle=grad; ctx.fillRect(x,y,Math.max(3,bw-4),bh); ctx.fillStyle='#a9c8bc'; if(labels.length<=12) ctx.fillText(labels[i],x,H-8);}); ctx.fillStyle='#ffd34d'; ctx.fillText(max.toFixed(0)+' mm',p,14);
 }
-function drawCharts(){const base=dateInput.value||today; const ym=monthOf(base); const days=[...new Set(scopedRecords().filter(r=>monthOf(r.date)==ym).map(r=>r.date))].sort(); const labels=days.map(d=>d.slice(8)); const vals=days.map(d=>sum(r=>r.date==d)); drawBarChart('dailyChart',labels.length?labels:['--'],vals.length?vals:[0]); const fLabels=FIELDS.map(f=>f.name); const fVals=FIELDS.map(f=>sum(r=>r.field==f.name)); drawBarChart('fieldChart',fLabels,fVals); drawBarChart('progressChart',['Plantado','Colhido'],[totalPlantado(),totalOperacao('Colheita')]);}
-function buildReport(){const total=sum(()=>true); const month=sum(r=>monthOf(r.date)==monthOf(dateInput.value||today)); const hoje=sum(r=>r.date==(dateInput.value||today)); const maior=FIELDS.map(f=>({f:f.name,v:sum(r=>r.field==f.name)})).sort((a,b)=>b.v-a.v)[0]; const ps=scopedPlantios(); const ops=scopedOperacoes(); const prox=ps.slice().sort((a,b)=>a.harvest.localeCompare(b.harvest))[0]; const faz=totalFarmArea(); const plant=totalPlantado(); const colh=totalOperacao('Colheita'); reportBox.innerHTML=`<b>Safra ativa:</b> ${activeSafra().name}<br><b>Área total dos talhões:</b> ${fmtHa(faz)} ha<br><b>Plantado:</b> ${fmtHa(plant)} ha (${pct(plant,faz).toFixed(1)}%) • Falta: ${fmtHa(Math.max(0,faz-plant))} ha<br><b>Colhido:</b> ${fmtHa(colh)} ha (${pct(colh,faz).toFixed(1)}%) • Falta: ${fmtHa(Math.max(0,faz-colh))} ha<br><br>Total chuva safra: <b>${total.toFixed(1)} mm</b><br>Mês selecionado: <b>${month.toFixed(1)} mm</b><br>Data selecionada: <b>${hoje.toFixed(1)} mm</b><br>Talhão com maior acumulado: <b>${maior?maior.f+' - '+maior.v.toFixed(1)+' mm':'--'}</b><br><br><b>Plantio:</b> ${ps.length} lançamento(s). <b>Operações:</b> ${ops.length} lançamento(s). Próxima colheita: <b>${prox&&prox.harvest?brDate(prox.harvest):'--'}</b><br><br>Use o botão <b>PDF</b> para imprimir/salvar relatório.`;}
+function drawCharts(){const base=dateInput.value||today; const ym=monthOf(base); const days=[...new Set(scopedRecords().filter(r=>monthOf(r.date)==ym).map(r=>r.date))].sort(); const labels=days.map(d=>d.slice(8)); const vals=days.map(d=>chuvaMediaDia(d)); drawBarChart('dailyChart',labels.length?labels:['--'],vals.length?vals:[0]); const fLabels=FIELDS.map(f=>f.name); const fVals=FIELDS.map(f=>sum(r=>r.field==f.name)); drawBarChart('fieldChart',fLabels,fVals); drawBarChart('progressChart',['Plantado','Colhido'],[totalPlantado(),totalOperacao('Colheita')]);}
+function buildReport(){const total=chuvaMediaSafra(); const month=chuvaMediaMes(monthOf(dateInput.value||today)); const hoje=chuvaMediaDia(dateInput.value||today); const maior=FIELDS.map(f=>({f:f.name,v:sum(r=>r.field==f.name)})).sort((a,b)=>b.v-a.v)[0]; const ps=scopedPlantios(); const ops=scopedOperacoes(); const prox=ps.slice().sort((a,b)=>a.harvest.localeCompare(b.harvest))[0]; const faz=totalFarmArea(); const plant=totalPlantado(); const colh=totalOperacao('Colheita'); reportBox.innerHTML=`<b>Safra ativa:</b> ${activeSafra().name}<br><b>Área total dos talhões:</b> ${fmtHa(faz)} ha<br><b>Plantado:</b> ${fmtHa(plant)} ha (${pct(plant,faz).toFixed(1)}%) • Falta: ${fmtHa(Math.max(0,faz-plant))} ha<br><b>Colhido:</b> ${fmtHa(colh)} ha (${pct(colh,faz).toFixed(1)}%) • Falta: ${fmtHa(Math.max(0,faz-colh))} ha<br><br>Chuva média da safra: <b>${total.toFixed(1)} mm</b><br>Mês selecionado (média): <b>${month.toFixed(1)} mm</b><br>Data selecionada (média): <b>${hoje.toFixed(1)} mm</b><br>Talhão com maior acumulado: <b>${maior?maior.f+' - '+maior.v.toFixed(1)+' mm':'--'}</b><br><span class="small">Obs.: chuva geral agora usa média dos talhões por dia, não soma os mm de todos os talhões.</span><br><br><b>Plantio:</b> ${ps.length} lançamento(s). <b>Operações:</b> ${ops.length} lançamento(s). Próxima colheita: <b>${prox&&prox.harvest?brDate(prox.harvest):'--'}</b><br><br>Use o botão <b>PDF</b> para imprimir/salvar relatório.`;}
 
 
 function addDays(d, days){const x=new Date(d+'T12:00:00'); x.setDate(x.getDate()+Number(days||0)); return x.toISOString().slice(0,10)}
