@@ -1,12 +1,9 @@
-GMV Gestão V21 - Chuva por média
+# GMV Gestão V22 - Ficha do Talhão
 
-Correção incluída:
-- O relatório rápido não soma mais os milímetros de todos os talhões.
-- Chuva geral da safra agora calcula a média dos talhões por data e soma essas médias diárias.
-- Gráfico de chuva diária também usa média dos talhões lançados no dia.
-- O acumulado por talhão continua individual, para comparar qual talhão teve maior acumulado.
-
-Exemplo:
-1A = 20 mm, 1B = 20 mm, 2A = 20 mm no mesmo dia.
-Antes mostrava 60 mm.
-Agora mostra 20 mm de chuva média da fazenda.
+Melhorias incluídas:
+- Nova ficha do talhão ao clicar no mapa.
+- Mostra área do KML, chuva da safra, chuva do mês, maior chuva e dias com chuva.
+- Mostra plantio do talhão, operações, colheita e últimas chuvas.
+- Linha do tempo por talhão dentro da safra ativa.
+- Botão Ficha no popup do mapa e ícone Talhão no menu inferior.
+- Mantém Chuvas, Plantio, Operações, Safras e Firebase como estavam.
