@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v25 • Fazenda Matão</title>
+<title>GMV Gestão v25.3.2 • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=25"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=25"><link rel="icon" type="image/png" href="favicon.png?v=25"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -20,8 +20,8 @@
 @media print{.sidebar,.topbar,#map,.mapwrap{display:none!important}.app{display:block;height:auto;overflow:visible}.right{display:block}.card{box-shadow:none;border:1px solid #ccc;background:white!important;color:#111!important;margin:10px 0}.panel h2,.panel h3,.metric b{color:#111!important}.item,.metric span{color:#333!important}}
 </style></head><body>
 <div class="app">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.1 Offline</b><br>Chuvas + Plantio + Produção + Fotos sincronizados.<br><span id="syncStatusSide">Modo local</span></div></aside>
- <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.4.3 Online/Offline</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard"><h2>Dashboard da safra</h2><p class="small">Visão geral automática da Fazenda Matão. Atualiza conforme você lança chuva, plantio, operação e produção.</p><div class="grid2" id="dashboardCards"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
   <div class="card panel section-anchor" id="secLancamento"><h2 id="selectedTitle">Lançar chuva</h2><div class="grid2"><div><label>Talhão</label><select id="fieldSelect"></select></div><div><label>Data</label><input id="dateInput" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Chuva (mm)</label><input id="mmInput" type="number" step="0.1" min="0" placeholder="Ex: 18"></div><div><label>Responsável</label><select id="respInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="obsInput" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveBtn">Salvar chuva</button><button class="secondary" id="clearBtn">Limpar dados</button></div></div>
@@ -29,7 +29,7 @@
   <div class="card panel section-anchor" id="secPlantio"><h2>Plantio e previsão de colheita</h2><div class="grid2"><div><label>Talhão</label><select id="plantField"></select></div><div><label>Cultura</label><select id="plantCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Braquiária</option><option>Outro</option></select></div></div><div class="grid2" style="margin-top:10px"><div><label>Cultivar / variedade</label><input id="plantCultivar" placeholder="Ex: Olimpo, Lenda, Dagma"></div><div><label>Área (ha)</label><input id="plantArea" type="number" step="0.01" placeholder="Ex: 120"><div id="plantAreaHint" class="field-area-note"></div></div></div><div class="grid2" style="margin-top:10px"><div><label>Data do plantio</label><input id="plantDate" type="date"></div><div><label>Ciclo até colheita (dias)</label><input id="plantCycle" type="number" min="1" value="120"></div></div><div class="grid2" style="margin-top:10px"><div><label>População</label><input id="plantPop" placeholder="Ex: 280 mil/ha"></div><div><label>Espaçamento</label><input id="plantSpacing" placeholder="Ex: 0,45 m"></div></div><div class="grid2" style="margin-top:10px"><div><label>Responsável</label><select id="plantResp"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div><div><label>Previsão de colheita</label><input id="harvestPreview" readonly></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="plantObs" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="savePlantBtn">Salvar plantio</button><button class="secondary" id="clearPlantBtn">Limpar plantios</button></div><h3>Plantios salvos</h3><div class="list" id="plantList"></div></div>
   <div class="card panel section-anchor" id="secOperacoes"><h2>Operações</h2><p class="small">Lance áreas feitas sem alterar Chuvas e Plantio.</p><div class="grid2"><div><label>Talhão</label><select id="opField"></select></div><div><label>Data</label><input id="opDate" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Responsável</label><select id="opResp"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div><div><label>Operador</label><input id="opOperador" placeholder="Ex: Luiz"></div></div><label style="margin-top:10px">Operação</label><div class="ops-grid" id="opTypes"><button class="opbtn active" data-op="Adubação">🚜<br>Adubação</button><button class="opbtn" data-op="Escarificação">⚙️<br>Escarificação</button><button class="opbtn" data-op="Grade">🛞<br>Grade</button><button class="opbtn" data-op="Subsolagem">⛏️<br>Subsolagem</button><button class="opbtn" data-op="Pulverização">💦<br>Pulverização</button><button class="opbtn" data-op="Calagem">⚪<br>Calagem</button><button class="opbtn" data-op="Gessagem">⬜<br>Gessagem</button><button class="opbtn" data-op="Colheita">🌾<br>Colheita</button></div><div class="grid2" style="margin-top:10px"><div><label>Área feita (ha)</label><input id="opArea" type="number" step="0.01" min="0" placeholder="Ex: 85,50"><div id="opAreaHint" class="field-area-note"></div></div><div><label>Máquina</label><input id="opMaquina" placeholder="Ex: 7200J, S770"></div></div><div class="grid2" style="margin-top:10px"><div><label>Produto</label><input id="opProduto" placeholder="Ex: 20-00-20"></div><div><label>Dose</label><input id="opDose" placeholder="Ex: 300 kg/ha"></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="opObs" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveOpBtn">Salvar operação</button><button class="secondary" id="clearOpBtn">Limpar campos</button></div><h3>Importar KML de operação</h3><p class="small">Primeira etapa: guarda o nome do arquivo KML no histórico da operação. Depois podemos evoluir para ler o desenho real e calcular hectares automático.</p><div class="grid2"><div><input id="kmlOpFile" type="file" accept=".kml"></div><div><button class="secondary" id="importKmlOpBtn">Salvar KML no histórico</button></div></div><h3>Operações salvas</h3><div class="list" id="opList"></div></div>
 
-  <div class="card panel section-anchor" id="secProducao"><h2>Produção / Colheita</h2><p class="small">Lance o peso líquido de cada carreta em kg. O sistema calcula toneladas, sacas, média por carreta e produtividade por hectare.</p><div class="metric" style="border:2px solid #ffd34d;margin:10px 0;background:#1f351b" id="prodResumoDestaque"><span>📊 RESUMO DA COLHEITA</span><b id="prodMediaDestaque">Média/carreta: 0 kg</b><br><span id="prodResumoDestaqueTxt">Total: 0 kg • 0,0 t • 0,0 sc • 0,0 sc/ha</span></div><div class="grid2"><div><label>Talhão</label><select id="prodField"></select></div><div><label>Data</label><input id="prodDate" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Cultura</label><select id="prodCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Outro</option></select></div><div><label>Kg por saca</label><input id="prodSacaKg" type="number" step="0.01" value="60" placeholder="Ex: 60"></div></div><div class="grid2" style="margin-top:10px"><div><label>Placa / carreta</label><input id="prodPlaca" placeholder="Ex: Carreta 01 / Placa"></div><div><label>Peso líquido (kg)</label><input id="prodPesoKg" type="number" step="0.01" min="0" placeholder="Ex: 34200"></div></div><div class="grid2" style="margin-top:10px"><div><label>Área colhida referência (ha)</label><input id="prodAreaHa" type="number" step="0.01" min="0" placeholder="Opcional para kg/ha e sc/ha"><div id="prodAreaHint" class="field-area-note"></div></div><div><label>Responsável</label><select id="prodResp"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="prodObs" rows="2" placeholder="Ex: umidade, desconto, origem"></textarea></div><div class="grid2" style="margin-top:10px" id="prodPreview"><div class="metric"><span>Essa carreta</span><b id="previewTon">0,0</b> t</div><div class="metric"><span>Sacas</span><b id="previewSacas">0,0</b> sc</div></div><div class="metric" style="margin-top:10px" id="prodResumoTalhaoAtual"><span>Resumo do talhão selecionado</span><b id="prodMediaTalhaoAtual">Média/carreta: 0 kg</b><br><span id="prodResumoTalhaoTxt">Total: 0 kg • 0,0 sc • 0,0 sc/ha</span></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveProdBtn">Salvar produção</button><button class="secondary" id="clearProdBtn">Limpar campos</button></div><h3>Resumo da produção</h3><div class="grid2" id="prodResumoCards"></div><h3>Produção por talhão</h3><table class="summary"><thead><tr><th>Talhão</th><th>Kg</th><th>Sacas</th><th>Média/carreta</th><th>sc/ha</th></tr></thead><tbody id="prodSummaryBody"></tbody></table><h3>Últimas carretas</h3><div class="list" id="prodList"></div></div>
+  <div class="card panel section-anchor" id="secProducao"><h2>Produção / Colheita</h2><p class="small">Lance o peso líquido de cada carreta em kg. O sistema calcula toneladas, sacas, média por carreta e produtividade por hectare.</p><div class="grid2"><div><label>Talhão</label><select id="prodField"></select></div><div><label>Data</label><input id="prodDate" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Cultura</label><select id="prodCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Outro</option></select></div><div><label>Kg por saca</label><input id="prodSacaKg" type="number" step="0.01" value="60" placeholder="Ex: 60"></div></div><div class="grid2" style="margin-top:10px"><div><label>Placa / carreta</label><input id="prodPlaca" placeholder="Ex: Carreta 01 / Placa"></div><div><label>Peso líquido (kg)</label><input id="prodPesoKg" type="number" step="0.01" min="0" placeholder="Ex: 34200"></div></div><div class="grid2" style="margin-top:10px"><div><label>Área colhida referência (ha)</label><input id="prodAreaHa" type="number" step="0.01" min="0" placeholder="Opcional para kg/ha e sc/ha"><div id="prodAreaHint" class="field-area-note"></div></div><div><label>Responsável</label><select id="prodResp"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="prodObs" rows="2" placeholder="Ex: umidade, desconto, origem"></textarea></div><div class="grid2" style="margin-top:10px" id="prodPreview"><div class="metric"><span>Essa carreta</span><b id="previewTon">0,0</b> t</div><div class="metric"><span>Sacas</span><b id="previewSacas">0,0</b> sc</div></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveProdBtn">Salvar produção</button><button class="secondary" id="clearProdBtn">Limpar campos</button></div><h3>Resumo da produção</h3><div class="grid2" id="prodResumoCards"></div><h3>Produção por talhão</h3><table class="summary"><thead><tr><th>Talhão</th><th>Kg</th><th>Sacas</th><th>Média/carreta</th><th>sc/ha</th></tr></thead><tbody id="prodSummaryBody"></tbody></table><h3>Últimas carretas</h3><div class="list" id="prodList"></div></div>
   <div class="card panel section-anchor" id="secProgresso"><h2>Progresso da safra</h2><p class="small">Áreas totais lidas automaticamente dos mapas KML. Lance área parcial no plantio, colheita e operações.</p><div class="grid2" id="progressCards"></div><h3>Progresso por talhão</h3><div class="list" id="fieldProgressList"></div></div>
   <div class="card panel section-anchor" id="secResumo"><h2>Resumo por talhão</h2><table class="summary"><thead><tr><th>Talhão</th><th>Área</th><th>Plantado</th><th>Colhido</th><th>Chuva</th><th>Sacas</th></tr></thead><tbody id="summaryBody"></tbody></table></div>
   <div class="card panel section-anchor" id="secGraficos"><h2>Gráficos</h2><h3>Chuva diária do mês</h3><canvas id="dailyChart" height="130"></canvas><h3>Acumulado por talhão</h3><canvas id="fieldChart" height="150"></canvas><h3>Plantio x colheita (ha)</h3><canvas id="progressChart" height="150"></canvas></div>
@@ -113,43 +113,55 @@ function setSync(ok,msg){
   const a=document.getElementById('syncStatus'); if(a) a.textContent=t;
   const b=document.getElementById('syncStatusSide'); if(b) b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho');
 }
+function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''));}
+function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0;}
+function mergeArrays(localArr, remoteArr){
+  const map=new Map();
+  [...(Array.isArray(remoteArr)?remoteArr:[]), ...(Array.isArray(localArr)?localArr:[])].forEach(item=>{
+    if(!item) return;
+    const k=syncArrayKey(item);
+    const old=map.get(k);
+    if(!old || syncTime(item)>=syncTime(old)) map.set(k,item);
+  });
+  return Array.from(map.values());
+}
 function setupSync(){
+  setSync(false,'Conectando sincronização...');
   try{
     const cfg=window.GMV_FIREBASE_CONFIG||{};
-    if(!cfg.apiKey || String(cfg.apiKey).includes('COLE_')){setSync(false,'Local');return;}
-    firebase.initializeApp(cfg);
+    if(!cfg.apiKey || String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return;}
+    if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou');return;}
+    if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
     db=firebase.firestore();
     try{ firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{}); }catch(e){}
     syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');
     unsubscribeSync=syncDoc.onSnapshot(snap=>{
-      const data=snap.data();
+      const data=snap.data()||{};
       remoteReady=true;
-      if(!data){ flushLocalToFirebase(); return; }
-      if(pendingSync()){
-        // Existem lançamentos feitos sem internet ou antes da sincronização.
-        // Mantém a base local e envia para a nuvem, para não voltar dados antigos.
-        flushLocalToFirebase();
-        return;
-      }
-      applyingRemote=true;
-      records=Array.isArray(data.records)?data.records:[];
-      plantios=Array.isArray(data.plantios)?data.plantios:[];
-      operacoes=Array.isArray(data.operacoes)?data.operacoes:[];
-      producoes=Array.isArray(data.producoes)?data.producoes:[];
-      fotos=Array.isArray(data.fotos)?data.fotos:[];
-      if(Array.isArray(data.safras)&&data.safras.length) safras=data.safras;
+      const oldPack=JSON.stringify({records,plantios,operacoes,producoes,fotos,safras});
+      records=mergeArrays(records,data.records);
+      plantios=mergeArrays(plantios,data.plantios);
+      operacoes=mergeArrays(operacoes,data.operacoes);
+      producoes=mergeArrays(producoes,data.producoes);
+      fotos=mergeArrays(fotos,data.fotos);
+      if(Array.isArray(data.safras)&&data.safras.length) safras=mergeArrays(safras,data.safras);
       if(!safras.find(s=>s.id===currentSafra)) currentSafra=(safras[0]&&safras[0].id)||currentSafra;
       ensureSafraIds();
       fillSafraSelect();
       saveStore(false);
-      applyingRemote=false;
+      const newPack=JSON.stringify({records,plantios,operacoes,producoes,fotos,safras});
+      const remotePack=JSON.stringify({records:data.records||[],plantios:data.plantios||[],operacoes:data.operacoes||[],producoes:data.producoes||[],fotos:data.fotos||[],safras:data.safras||[]});
       refresh();
       setSync(true,'Sincronizado');
-    },()=>setSync(false,navigator.onLine?'Sem conexão ou regra bloqueada':'Offline — salvo no aparelho'));
+      markClean();
+      // Se tem dado novo neste aparelho que ainda não existe na nuvem, manda para os outros aparelhos.
+      if(newPack!==remotePack){
+        setTimeout(()=>syncDoc.set({records, plantios, operacoes, producoes, fotos, safras, updatedAt:new Date().toISOString()}, {merge:true}).catch(()=>setSync(false,'Erro ao enviar para nuvem')),250);
+      }
+    },(err)=>{console.error(err); setSync(false,navigator.onLine?'Sem conexão com Firebase':'Offline — salvo no aparelho')});
     window.addEventListener('online',()=>{setSync(false,'Enviando dados salvos...'); setTimeout(flushLocalToFirebase,800)});
     window.addEventListener('offline',()=>setSync(false,'Offline — salvo no aparelho'));
-    if(pendingSync()) setSync(false,'Offline — aguardando sincronização');
-  }catch(e){setSync(false,'Local');}
+  }catch(e){console.error(e);setSync(false,'Local');}
 }
 
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
@@ -275,20 +287,9 @@ function editProducao(id){const p=producoes.find(x=>x.id===id); if(!p)return; pr
 function buildProducao(){
  if(!document.getElementById('prodList')) return;
  const t=prodTotals();
- const ton=kgToTon(t.kg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
- if(document.getElementById('prodMediaDestaque')){
-   prodMediaDestaque.textContent='🚛 Média/carreta: '+fmtKg(t.mediaKg)+' kg';
-   prodResumoDestaqueTxt.textContent='Carretas: '+t.carretas+' • Total: '+fmtKg(t.kg)+' kg • '+ton+' t • '+fmtSc(t.sacas)+' sc • '+fmtSc(t.scHa)+' sc/ha';
- }
- const fieldAtual=(document.getElementById('prodField')&&prodField.value)||selected;
- const ft=prodTotals(p=>p.field===fieldAtual);
- if(document.getElementById('prodMediaTalhaoAtual')){
-   prodMediaTalhaoAtual.textContent='🚛 Média/carreta '+fieldAtual+': '+fmtKg(ft.mediaKg)+' kg';
-   prodResumoTalhaoTxt.textContent='Carretas: '+ft.carretas+' • Total: '+fmtKg(ft.kg)+' kg • '+fmtSc(ft.sacas)+' sc • '+fmtSc(ft.scHa)+' sc/ha';
- }
- prodResumoCards.innerHTML=[['🚛 Carretas',t.carretas,''],['⚖️ Total kg',fmtKg(t.kg),'kg'],['🚚 Média/carreta',fmtKg(t.mediaKg),'kg'],['📦 Sacas',fmtSc(t.sacas),'sc'],['📈 Produtividade',fmtSc(t.scHa),'sc/ha'],['🌾 Kg por ha',fmtKg(t.kgHa),'kg/ha']].map(([a,b,c])=>`<div class="metric"><span>${a}</span><b>${b}</b> ${c}</div>`).join('');
- prodSummaryBody.innerHTML=FIELDS.map(f=>{const x=prodTotals(p=>p.field===f.name); return `<tr onclick="selectField('${f.name}',true)" style="cursor:pointer"><td><span class="tag">${f.name}</span></td><td>${fmtKg(x.kg)}</td><td>${fmtSc(x.sacas)}</td><td><b>${fmtKg(x.mediaKg)}</b></td><td>${fmtSc(x.scHa)}</td></tr>`}).join('');
- prodList.innerHTML=scopedProducoes().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).slice(0,80).map(p=>`<div class="item"><b>${p.field}</b> • ${brDate(p.date)} • ${p.culture||''}${p.placa?' • '+p.placa:''}<br><b>${fmtKg(p.pesoKg)} kg</b> • ${kgToTon(p.pesoKg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} t • <b>${fmtSc(kgToSacas(p.pesoKg,p.sacaKg))} sc</b> (${p.sacaKg||60} kg/sc)<br>${p.resp||''}${p.areaHa?' • Área ref.: '+fmtHa(p.areaHa)+' ha':''}${p.obs?' • '+p.obs:''}<div class="actions-mini"><button class="mini-btn mini-edit" onclick="editProducao(${p.id})">Editar</button><button class="mini-btn mini-del" onclick="deleteProducao(${p.id})">Apagar</button></div></div>`).join('')||'<div class="item">Nenhuma carreta lançada ainda. Lance uma carreta em kg que a média aparece automaticamente aqui em cima.</div>';
+ prodResumoCards.innerHTML=[['Total kg',fmtKg(t.kg),'kg'],['Toneladas',kgToTon(t.kg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}),'t'],['Sacas',fmtSc(t.sacas),'sc'],['Média/carreta',fmtKg(t.mediaKg),'kg'],['Produtividade',fmtSc(t.scHa),'sc/ha'],['Kg por ha',fmtKg(t.kgHa),'kg/ha']].map(([a,b,c])=>`<div class="metric"><span>${a}</span><b>${b}</b> ${c}</div>`).join(''); const ptr=document.getElementById('prodTopResumo'); if(ptr){ptr.innerHTML=`<b>⚖️ Produção:</b> ${fmtKg(t.kg)} kg • Sacas ${fmtSc(t.sacas)} • Média ${fmtKg(t.mediaKg)} kg`; }
+ prodSummaryBody.innerHTML=FIELDS.map(f=>{const x=prodTotals(p=>p.field===f.name); return `<tr onclick="selectField('${f.name}',true)" style="cursor:pointer"><td><span class="tag">${f.name}</span></td><td>${fmtKg(x.kg)}</td><td>${fmtSc(x.sacas)}</td><td>${fmtKg(x.mediaKg)}</td><td>${fmtSc(x.scHa)}</td></tr>`}).join('');
+ prodList.innerHTML=scopedProducoes().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).slice(0,80).map(p=>`<div class="item"><b>${p.field}</b> • ${brDate(p.date)} • ${p.culture||''}${p.placa?' • '+p.placa:''}<br><b>${fmtKg(p.pesoKg)} kg</b> • ${kgToTon(p.pesoKg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} t • <b>${fmtSc(kgToSacas(p.pesoKg,p.sacaKg))} sc</b> (${p.sacaKg||60} kg/sc)<br>${p.resp||''}${p.areaHa?' • Área ref.: '+fmtHa(p.areaHa)+' ha':''}${p.obs?' • '+p.obs:''}<div class="actions-mini"><button class="mini-btn mini-edit" onclick="editProducao(${p.id})">Editar</button><button class="mini-btn mini-del" onclick="deleteProducao(${p.id})">Apagar</button></div></div>`).join('')||'<div class="item">Nenhuma carreta lançada ainda.</div>';
  updateProdPreview();
 }
 if(document.getElementById('saveProdBtn')) saveProdBtn.onclick=saveProducao;
