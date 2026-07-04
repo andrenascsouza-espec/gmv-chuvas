@@ -1,5 +1,1 @@
-GMV Gestão v25.4 - sincronização automática restaurada
-
-- Mantém Firebase/Firestore da v23
-- Sincroniza chuvas, plantio, operações, produção, fotos e safras
-- Produção com média por carreta, kg, toneladas, sacas e sc/ha
+GMV Gestão v25.5 - sincronização Firebase corrigida. Upload todos os arquivos no GitHub Pages. Abra no PC primeiro e clique 🔄 Sincronizar; depois atualize no telefone.
