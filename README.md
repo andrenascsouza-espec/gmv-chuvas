@@ -1,1 +1,1 @@
-GMV Gestão v25.5 - sincronização Firebase corrigida. Upload todos os arquivos no GitHub Pages. Abra no PC primeiro e clique 🔄 Sincronizar; depois atualize no telefone.
+GMV Gestão v25.7 - abas separadas por ícone no celular, produtividade corrigida por hectare do talhão e foto com câmera.

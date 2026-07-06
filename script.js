@@ -353,9 +353,17 @@ if(document.getElementById('setSafraBtn')) setSafraBtn.onclick=()=>setSafra(safr
 dateInput.onchange=refresh;
 function goSection(id){
  const el=document.getElementById(id); if(!el) return;
- el.scrollIntoView({behavior:'smooth',block:'start'});
+ // No celular, cada ícone abre uma página/aba separada. No computador continua navegando normal.
+ document.querySelectorAll('.mapwrap,.right>.section-anchor').forEach(x=>x.classList.remove('active-page'));
+ el.classList.add('active-page');
+ if(window.innerWidth<=1050){ window.scrollTo({top:0,behavior:'smooth'}); }
+ else { el.scrollIntoView({behavior:'smooth',block:'start'}); }
  if(id==='secMapa') setTimeout(()=>map.invalidateSize(),250);
  document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',b.dataset.target===id));
+ document.querySelectorAll('.nav button').forEach((b,i)=>{
+   const ids=['secDashboard','secLancamento','secFicha','secPlantio','secOperacoes','secProducao','secRelatorios','secGraficos','secSafras'];
+   b.classList.toggle('active',(ids[i]||'secMapa')===id);
+ });
 }
 document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>goSection(b.dataset.target));
 document.querySelectorAll('.nav button').forEach((b,i)=>{
@@ -370,7 +378,9 @@ selectField('Sede',false);
 setupSync();
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=25').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=257').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
+
+setTimeout(()=>goSection('secMapa'),80);
