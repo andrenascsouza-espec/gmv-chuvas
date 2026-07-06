@@ -221,17 +221,22 @@ function kgToSacas(kg,sacaKg){const sk=parseNum(sacaKg)||60; return parseNum(kg)
 function fmtKg(v){return parseNum(v).toLocaleString('pt-BR',{maximumFractionDigits:0})}
 function fmtSc(v){return parseNum(v).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})}
 function prodTotals(filter=()=>true){
- const arr=scopedProducoes().filter(filter); const kg=arr.reduce((s,p)=>s+parseNum(p.pesoKg),0); const sacas=arr.reduce((s,p)=>s+kgToSacas(p.pesoKg,p.sacaKg),0); const carretas=arr.length; const area=[...new Set(arr.map(p=>p.field))].reduce((s,f)=>s+prodAreaField(f),0);
+ const arr=scopedProducoes().filter(filter);
+ const kg=arr.reduce((s,p)=>s+parseNum(p.pesoKg),0);
+ const sacas=arr.reduce((s,p)=>s+kgToSacas(p.pesoKg,p.sacaKg),0);
+ const carretas=arr.length;
+ // Produtividade correta: soma todas as cargas do talhão e divide pela área TOTAL do talhão no KML/cadastro.
+ // Não soma hectares por carga, para não distorcer kg/ha e sc/ha quando existem várias carretas.
+ const area=[...new Set(arr.map(p=>p.field).filter(Boolean))].reduce((s,f)=>s+prodAreaField(f),0);
  return {arr,kg,sacas,carretas,mediaKg:carretas?kg/carretas:0,area,kgHa:area?kg/area:0,scHa:area?sacas/area:0};
 }
 function prodAreaField(field){
- const areas=scopedProducoes().filter(p=>p.field===field).map(p=>parseNum(p.areaHa)).filter(v=>v>0);
- return areas.length ? Math.max(...areas) : fieldArea(field);
+ return fieldArea(field);
 }
 function updateProdPreview(){
  if(!document.getElementById('prodPesoKg')) return;
  const kg=parseNum(prodPesoKg.value); const sk=parseNum(prodSacaKg.value)||60; previewTon.textContent=kgToTon(kg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}); previewSacas.textContent=fmtSc(kgToSacas(kg,sk));
- const a=fieldArea(prodField.value); const pa=prodAreaField(prodField.value); prodAreaHint.textContent=a?`Área KML do talhão: ${fmtHa(a)} ha • referência atual p/ produtividade: ${fmtHa(pa)} ha`:'';
+ const a=fieldArea(prodField.value); const pa=prodAreaField(prodField.value); prodAreaHint.textContent=a?`Área total do talhão: ${fmtHa(a)} ha • produtividade calculada pela área do KML`:'';
 }
 function saveProducao(){
  const kg=parseNum(prodPesoKg.value); if(!prodDate.value){toast('Informe a data da produção');return} if(!kg){toast('Informe o peso líquido em kg');return}
@@ -245,7 +250,7 @@ function buildProducao(){
  if(!document.getElementById('prodList')) return;
  const t=prodTotals();
  prodResumoCards.innerHTML=[['Total kg',fmtKg(t.kg),'kg'],['Toneladas',kgToTon(t.kg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}),'t'],['Sacas',fmtSc(t.sacas),'sc'],['Média/carreta',fmtKg(t.mediaKg),'kg'],['Produtividade',fmtSc(t.scHa),'sc/ha'],['Kg por ha',fmtKg(t.kgHa),'kg/ha']].map(([a,b,c])=>`<div class="metric"><span>${a}</span><b>${b}</b> ${c}</div>`).join(''); const ptr=document.getElementById('prodTopResumo'); if(ptr){ptr.innerHTML=`<b>⚖️ Produção:</b> ${fmtKg(t.kg)} kg • Sacas ${fmtSc(t.sacas)} • Média ${fmtKg(t.mediaKg)} kg`; }
- prodSummaryBody.innerHTML=FIELDS.map(f=>{const x=prodTotals(p=>p.field===f.name); return `<tr onclick="selectField('${f.name}',true)" style="cursor:pointer"><td><span class="tag">${f.name}</span></td><td>${fmtKg(x.kg)}</td><td>${fmtSc(x.sacas)}</td><td>${fmtKg(x.mediaKg)}</td><td>${fmtSc(x.scHa)}</td></tr>`}).join('');
+ prodSummaryBody.innerHTML=FIELDS.map(f=>{const x=prodTotals(p=>p.field===f.name); return `<tr onclick="selectField('${f.name}',true)" style="cursor:pointer"><td><span class="tag">${f.name}</span></td><td>${fmtKg(x.kg)}</td><td>${fmtSc(x.sacas)}</td><td>${fmtKg(x.mediaKg)}</td><td>${fmtKg(x.kgHa)}</td><td>${fmtSc(x.scHa)}</td></tr>`}).join('');
  prodList.innerHTML=scopedProducoes().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).slice(0,80).map(p=>`<div class="item"><b>${p.field}</b> • ${brDate(p.date)} • ${p.culture||''}${p.placa?' • '+p.placa:''}<br><b>${fmtKg(p.pesoKg)} kg</b> • ${kgToTon(p.pesoKg).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})} t • <b>${fmtSc(kgToSacas(p.pesoKg,p.sacaKg))} sc</b> (${p.sacaKg||60} kg/sc)<br>${p.resp||''}${p.areaHa?' • Área ref.: '+fmtHa(p.areaHa)+' ha':''}${p.obs?' • '+p.obs:''}<div class="actions-mini"><button class="mini-btn mini-edit" onclick="editProducao(${p.id})">Editar</button><button class="mini-btn mini-del" onclick="deleteProducao(${p.id})">Apagar</button></div></div>`).join('')||'<div class="item">Nenhuma carreta lançada ainda.</div>';
  updateProdPreview();
 }
