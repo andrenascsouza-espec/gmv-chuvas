@@ -295,10 +295,31 @@ function buildDashboard(){
  if(!scopedFotos().length) alerts.push('📷 Nenhuma foto anexada aos talhões nesta safra.');
  dashboardAlerts.innerHTML=alerts.map(a=>`<div class="item">${a}</div>`).join('') || '<div class="item">Tudo certo. Sem alertas principais.</div>';
 }
-function saveFoto(){
+async function comprimirFoto(file, maxDim=1600, qualidade=0.78){
+ if(!file || !file.type.startsWith('image/')) throw new Error('Arquivo não é uma imagem');
+ const url=URL.createObjectURL(file);
+ try{
+  const img=await new Promise((resolve,reject)=>{const i=new Image(); i.onload=()=>resolve(i); i.onerror=()=>reject(new Error('Não consegui abrir esta foto')); i.src=url;});
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(!w||!h) throw new Error('Foto inválida');
+  const escala=Math.min(1,maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*escala)); h=Math.max(1,Math.round(h*escala));
+  const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+  const ctx=canvas.getContext('2d',{alpha:false}); ctx.drawImage(img,0,0,w,h);
+  let q=qualidade, data=canvas.toDataURL('image/jpeg',q);
+  while(data.length>1600000 && q>0.55){q-=0.08; data=canvas.toDataURL('image/jpeg',q)}
+  return data;
+ } finally {URL.revokeObjectURL(url)}
+}
+async function saveFoto(){
  const file=fotoFile.files && fotoFile.files[0]; if(!file){toast('Escolha uma foto');return}
- if(file.size>2500000){toast('Foto muito grande. Tire print/recorte ou envie menor que 2,5 MB');return}
- const rd=new FileReader(); rd.onload=()=>{const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img:rd.result,ts:new Date().toISOString()}; fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field)}; rd.readAsDataURL(file);
+ const btn=document.getElementById('saveFotoBtn'); const texto=btn?btn.textContent:'';
+ try{
+  if(btn){btn.disabled=true;btn.textContent='Reduzindo foto...'}
+  const img=await comprimirFoto(file);
+  const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img,arquivoOriginal:file.name,ts:new Date().toISOString()};
+  fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto reduzida e salva no talhão '+rec.field)
+ }catch(e){console.error(e);toast(e.message||'Não consegui salvar esta foto')}
+ finally{if(btn){btn.disabled=false;btn.textContent=texto||'Salvar foto'}}
 }
 function deleteFoto(id){const p=prompt('Digite a senha 1234 para apagar esta foto:'); if(p!=='1234'){toast('Senha incorreta');return} fotos=fotos.filter(f=>f.id!==id); saveStore(); refresh(); toast('Foto apagada')}
 function buildFotos(){
