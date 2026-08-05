@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v25.13 • Fazenda Matão</title>
+<title>GMV Gestão v25.14 • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=25"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=25"><link rel="icon" type="image/png" href="favicon.png?v=25"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -41,9 +41,32 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
   .app.page-mode{display:block;min-height:100vh;overflow:auto}
 }
 canvas{display:block;width:100%;min-height:150px;}
+
+/* v25.14 - identidade visual GMV com marca d’água discreta */
+.right>.section-anchor{position:relative;isolation:isolate;}
+.right>.section-anchor::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background-image:url('logo-gmv.jpeg?v=2514');
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:min(72%,360px) auto;
+  opacity:.045;
+  filter:saturate(.9) contrast(1.05);
+  pointer-events:none;
+  z-index:0;
+}
+.right>.section-anchor>*{position:relative;z-index:1;}
+.right>.section-anchor{background:linear-gradient(180deg,rgba(12,42,34,.97),rgba(8,31,26,.97));}
+#secGraficos::before,#secFotos::before{opacity:.035;}
+@media(max-width:1050px){
+  .right>.section-anchor::before{background-size:min(78%,300px) auto;opacity:.04;}
+}
+@media print{.right>.section-anchor::before{opacity:.025;filter:grayscale(1);}}
 </style></head><body>
 <div class="app page-mode" id="appRoot">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.7 Abas separadas</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.14 • Dados, gráficos e identidade GMV</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
  <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar/puxar dados da nuvem">🔄 Sincronizar</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard"><h2>Dashboard da safra</h2><p class="small">Visão geral automática da Fazenda Matão. Atualiza conforme você lança chuva, plantio, operação e produção.</p><div class="grid2" id="dashboardCards"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
