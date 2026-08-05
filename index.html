@@ -57,7 +57,7 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
   <div class="card panel section-anchor" id="secGraficos"><h2>Gráficos</h2><h3>Chuva diária do mês</h3><canvas id="dailyChart" height="130"></canvas><h3>Acumulado por talhão</h3><canvas id="fieldChart" height="150"></canvas><h3>Plantio x colheita (ha)</h3><canvas id="progressChart" height="150"></canvas></div>
   <div class="card panel"><h2>Talhão selecionado</h2><div class="grid2"><div class="metric"><span>Hoje</span><b id="mHoje">0</b> mm</div><div class="metric"><span>Mês</span><b id="mMes">0</b> mm</div><div class="metric"><span>Safra</span><b id="mSafra">0</b> mm</div><div class="metric"><span>Última chuva</span><b id="mUltima" style="font-size:16px">--</b></div></div></div>
   <div class="card panel section-anchor" id="secFicha"><h2>Ficha do talhão</h2><div id="fieldReportBox" class="item">Clique em um talhão no mapa para ver o relatório.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="secondary" onclick="goSection('secLancamento')">Lançar chuva</button><button class="secondary" onclick="goSection('secPlantio')">Plantio</button><button class="secondary" onclick="goSection('secOperacoes')">Operação</button><button class="secondary" onclick="goSection('secFotos')">Fotos</button><button class="secondary" onclick="window.print()">PDF</button></div></div>
-  <div class="card panel section-anchor" id="secFotos"><h2>Fotos do talhão</h2><p class="small">Tire ou escolha qualquer foto. O sistema reduz automaticamente e salva no talhão e no backup completo.</p><div class="grid2"><div><label>Talhão</label><select id="fotoField"></select></div><div><label>Data</label><input id="fotoDate" type="date"></div></div><div style="margin-top:10px"><label>Foto</label><input id="fotoFile" type="file" accept="image/*" capture="environment"><div class="small" style="margin-top:5px">No celular, toque aqui para tirar foto na hora e salvar no talhão.</div></div><div style="margin-top:10px"><label>Observação</label><textarea id="fotoObs" rows="2" placeholder="Ex: falha, praga, erosão, área bonita"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveFotoBtn">Salvar foto</button><button class="secondary" id="clearFotosBtn">Apagar fotos da safra</button></div><h3>Fotos salvas</h3><div class="list" id="fotoList"></div></div>
+  <div class="card panel section-anchor" id="secFotos"><h2>Fotos do talhão</h2><p class="small">Anexe foto direto no talhão. Fica salvo no aparelho e entra no backup completo.</p><div class="grid2"><div><label>Talhão</label><select id="fotoField"></select></div><div><label>Data</label><input id="fotoDate" type="date"></div></div><div style="margin-top:10px"><label>Foto</label><input id="fotoFile" type="file" accept="image/*" capture="environment"><div class="small" style="margin-top:5px">No celular, toque aqui para tirar foto na hora e salvar no talhão.</div></div><div style="margin-top:10px"><label>Observação</label><textarea id="fotoObs" rows="2" placeholder="Ex: falha, praga, erosão, área bonita"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveFotoBtn">Salvar foto</button><button class="secondary" id="clearFotosBtn">Apagar fotos da safra</button></div><h3>Fotos salvas</h3><div class="list" id="fotoList"></div></div>
   <div class="card panel section-anchor" id="secHistorico"><h2>Últimos lançamentos</h2><div class="list" id="historyList"></div></div>
   <div class="card panel section-anchor" id="secRelatorios"><h2>Relatório rápido</h2><div id="reportBox" class="item"></div></div>
   <div class="card panel section-anchor" id="secSafras"><h2>Safras</h2><p class="small">Use uma safra para cada ciclo. Ex.: Soja 26/27, Milho 27, Soja 27/28. Os lançamentos ficam separados por safra.</p><div class="grid2"><div><label>Nome da safra</label><input id="safraName" placeholder="Ex: Soja 27/28"></div><div><label>Cultura</label><select id="safraCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Braquiária</option><option>Outro</option></select></div></div><div class="grid2" style="margin-top:10px"><div><label>Data início</label><input id="safraStart" type="date"></div><div><label>Data final</label><input id="safraEnd" type="date"></div></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveSafraBtn">Salvar nova safra</button><button class="secondary" id="setSafraBtn">Usar safra selecionada</button></div><h3>Safras cadastradas</h3><div class="list" id="safraList"></div></div>
@@ -364,31 +364,10 @@ function buildDashboard(){
  if(!scopedFotos().length) alerts.push('📷 Nenhuma foto anexada aos talhões nesta safra.');
  dashboardAlerts.innerHTML=alerts.map(a=>`<div class="item">${a}</div>`).join('') || '<div class="item">Tudo certo. Sem alertas principais.</div>';
 }
-async function comprimirFoto(file, maxDim=1600, qualidade=0.78){
- if(!file || !file.type.startsWith('image/')) throw new Error('Arquivo não é uma imagem');
- const url=URL.createObjectURL(file);
- try{
-  const img=await new Promise((resolve,reject)=>{const i=new Image(); i.onload=()=>resolve(i); i.onerror=()=>reject(new Error('Não consegui abrir esta foto')); i.src=url;});
-  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-  if(!w||!h) throw new Error('Foto inválida');
-  const escala=Math.min(1,maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*escala)); h=Math.max(1,Math.round(h*escala));
-  const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-  const ctx=canvas.getContext('2d',{alpha:false}); ctx.drawImage(img,0,0,w,h);
-  let q=qualidade, data=canvas.toDataURL('image/jpeg',q);
-  while(data.length>1600000 && q>0.55){q-=0.08; data=canvas.toDataURL('image/jpeg',q)}
-  return data;
- } finally {URL.revokeObjectURL(url)}
-}
-async function saveFoto(){
+function saveFoto(){
  const file=fotoFile.files && fotoFile.files[0]; if(!file){toast('Escolha uma foto');return}
- const btn=document.getElementById('saveFotoBtn'); const texto=btn?btn.textContent:'';
- try{
-  if(btn){btn.disabled=true;btn.textContent='Reduzindo foto...'}
-  const img=await comprimirFoto(file);
-  const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img,arquivoOriginal:file.name,ts:new Date().toISOString()};
-  fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto reduzida e salva no talhão '+rec.field)
- }catch(e){console.error(e);toast(e.message||'Não consegui salvar esta foto')}
- finally{if(btn){btn.disabled=false;btn.textContent=texto||'Salvar foto'}}
+ if(file.size>2500000){toast('Foto muito grande. Tire print/recorte ou envie menor que 2,5 MB');return}
+ const rd=new FileReader(); rd.onload=()=>{const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img:rd.result,ts:new Date().toISOString()}; fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field)}; rd.readAsDataURL(file);
 }
 function deleteFoto(id){const p=prompt('Digite a senha 1234 para apagar esta foto:'); if(p!=='1234'){toast('Senha incorreta');return} fotos=fotos.filter(f=>f.id!==id); saveStore(); refresh(); toast('Foto apagada')}
 function buildFotos(){

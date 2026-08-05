@@ -1,6 +1,6 @@
 {
-  "name": "GMV Gestão Rural v25.8",
-  "short_name": "GMV v25.8",
+  "name": "GMV Gestão Rural v25",
+  "short_name": "GMV v25",
   "start_url": "./index.html?v=25",
   "scope": "./",
   "display": "standalone",
@@ -26,5 +26,5 @@
       "type": "image/png"
     }
   ],
-  "description": "Gestão Fazenda Matão v25.8 offline"
+  "description": "Gestão Fazenda Matão v25 offline"
 }
