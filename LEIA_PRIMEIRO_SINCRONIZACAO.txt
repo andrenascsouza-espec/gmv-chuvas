@@ -1,0 +1,33 @@
+GMV GESTÃO v25.20 — SOMENTE SINCRONIZAÇÃO
+
+Esta versão mantém o visual e as funções da v25.19.2 e altera somente a forma de sincronizar.
+
+O que foi corrigido:
+- Cada chuva, plantio, operação, produção e foto é salva separadamente no Firestore.
+- Fotos não ficam mais presas em um documento único grande.
+- Dados do iPhone e do PC são mesclados, sem o banco vazio apagar o aparelho.
+- Atualização em tempo real entre aparelhos.
+- Dados continuam no aparelho quando não houver internet.
+- A versão antiga do documento único é migrada automaticamente quando encontrada.
+
+REGRAS DO FIRESTORE PARA O PRIMEIRO TESTE:
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /fazendas/matao/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
+
+PASSO A PASSO:
+1. Faça um backup pelo botão Backup no iPhone.
+2. Substitua todos os arquivos no GitHub.
+3. Espere a publicação terminar.
+4. Abra primeiro no iPhone e toque em Sincronizar.
+5. Espere aparecer “Tudo sincronizado”.
+6. Abra no PC, atualize com Ctrl+F5 e toque em Sincronizar.
+7. Faça apenas uma operação e uma foto de teste.
+
+Não limpe o Safari e não apague o backup durante o teste.
