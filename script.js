@@ -36,31 +36,25 @@ let selected=FIELDS[0].name; let layers={};
 const today=new Date().toISOString().slice(0,10); dateInput.value=today;
 
 let db=null, syncDoc=null, unsubscribeSync=null, remoteReady=false, applyingRemote=false, syncBusy=false, syncTimer=null;
-const dirtyKey='gmv_sync_dirty_v2517';
-const localUpdatedKey='gmv_sync_local_updated_v2517';
-const clientIdKey='gmv_sync_client_id';
-const clientId=localStorage.getItem(clientIdKey)||('gmv_'+Date.now()+'_'+Math.random().toString(36).slice(2,8));
-localStorage.setItem(clientIdKey,clientId);
+const dirtyKey='gmv_sync_dirty_v23';
+const localUpdatedKey='gmv_sync_local_updated_v23';
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
 function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString())}
 function markClean(){localStorage.removeItem(dirtyKey)}
-function pendingCount(){return records.length+plantios.length+operacoes.length+producoes.length}
-// Fotos continuam salvas no aparelho. Imagens grandes ultrapassam o limite de um documento Firestore.
-function cloudPayload(){return {records,plantios,operacoes,producoes,safras,updatedAt:new Date().toISOString(),updatedBy:clientId,version:'25.17-sync'}}
-function scheduleCloudSave(delay=1200){clearTimeout(syncTimer);syncTimer=setTimeout(flushLocalToFirebase,delay)}
-async function flushLocalToFirebase(){
+function pendingCount(){return records.length+plantios.length+operacoes.length+producoes.length+fotos.length}
+function cloudPayload(){return {records,plantios,operacoes,producoes,safras,updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString()}}
+function scheduleCloudSave(){clearTimeout(syncTimer);syncTimer=setTimeout(flushLocalToFirebase,5000)}
+function flushLocalToFirebase(){
  if(syncBusy)return;
  if(!syncDoc||!navigator.onLine){setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho');return}
- syncBusy=true;setSync(false,'Enviando dados...');
- try{await syncDoc.set(cloudPayload(),{merge:true});markClean();setSync(true,'Sincronizado agora')}
- catch(err){console.error('Falha ao enviar:',err);markDirty();setSync(false,'Salvo no aparelho — confira as regras do Firebase')}
- finally{syncBusy=false}
+ syncBusy=true;
+ syncDoc.set(cloudPayload(),{merge:true}).then(()=>{markClean();setSync(true,'Sincronizado')}).catch(err=>{console.error('Falha ao enviar:',err);setSync(false,'Salvo no aparelho — nuvem indisponível')}).finally(()=>syncBusy=false)
 }
 function saveStore(upload=true){
  localStorage.setItem(storeKey,JSON.stringify(records));localStorage.setItem(plantKey,JSON.stringify(plantios));localStorage.setItem(opKey,JSON.stringify(operacoes));localStorage.setItem(prodKey,JSON.stringify(producoes));localStorage.setItem(fotoKey,JSON.stringify(fotos));localStorage.setItem(safraKey,JSON.stringify(safras));localStorage.setItem('gmv_safra_atual',currentSafra);
- if(upload&&!applyingRemote){markDirty();if(remoteReady&&syncDoc&&navigator.onLine)scheduleCloudSave();else setSync(false,'Aguardando conexão — '+pendingCount()+' registros no aparelho')}
+ if(upload&&!applyingRemote){markDirty();if(remoteReady&&syncDoc&&navigator.onLine)scheduleCloudSave();else setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho')}
 }
-function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Sincronizado');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🔴 '+(msg||'Conectando');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?'Online: PC e telefone usando a mesma base':(msg||'Dados locais preservados')}
+function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Sincronizado');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🔴 '+(msg||'Local');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho')}
 function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''))}
 function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0}
 function mergeArrays(localArr,remoteArr){const map=new Map();[...(Array.isArray(remoteArr)?remoteArr:[]),...(Array.isArray(localArr)?localArr:[])].forEach(item=>{if(!item)return;const k=syncArrayKey(item),old=map.get(k);if(!old||syncTime(item)>=syncTime(old))map.set(k,item)});return Array.from(map.values())}
@@ -75,33 +69,30 @@ function normalizeItem(x,type){
 }
 function normalizeList(arr,type){return (Array.isArray(arr)?arr:[]).map(x=>normalizeItem(x,type)).filter(Boolean)}
 function applyRemoteData(data){
- applyingRemote=true;
- records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh();applyingRemote=false
+ records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos,'foto'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh()
 }
-function startRealtimeListener(){
- if(!syncDoc||unsubscribeSync)return;
- unsubscribeSync=syncDoc.onSnapshot({includeMetadataChanges:false},snap=>{
-  if(!snap.exists)return;const data=snap.data()||{};
-  if(data.updatedBy===clientId)return;
-  applyRemoteData(data);setSync(true,'Atualizado de outro aparelho')
- },err=>{console.error('Escuta da nuvem:',err);setSync(false,'Sem atualização automática — toque em Sincronizar')})
-}
-async function setupSync(force=false){
+function setupSync(force=false){
  if(syncBusy)return;setSync(false,'Conectando sincronização...');
- try{
-  const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}
-  if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}
-  if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();
-  try{await firebase.firestore().enablePersistence({synchronizeTabs:true})}catch(e){}
-  syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
-  const snap=await syncDoc.get(force?{source:'server'}:undefined);
-  if(snap.exists)applyRemoteData(snap.data()||{});
-  remoteReady=true;syncBusy=false;startRealtimeListener();
-  // Sempre envia o conjunto mesclado. Isso leva para a nuvem os dados antigos que já estavam no telefone.
-  if(pendingCount()>0||pendingSync()||!snap.exists)await flushLocalToFirebase();else setSync(true,'Conectado — nenhum lançamento ainda')
- }catch(e){console.error(e);syncBusy=false;setSync(false,'Não conectou ao Firebase — dados continuam no aparelho')}
+ try{const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
+ const localHadData=pendingCount()>0;
+ syncDoc.get(force?{source:'server'}:undefined).then(async snap=>{
+   if(snap.exists)applyRemoteData(snap.data()||{});
+   remoteReady=true;
+   // Primeiro sincronismo: envia também os dados antigos que já estavam no aparelho,
+   // mesmo que eles tenham sido criados antes da ativação do Firebase.
+   if(localHadData||pendingSync()||!snap.exists){
+     localStorage.setItem(localUpdatedKey,new Date().toISOString());
+     await syncDoc.set(cloudPayload(),{merge:true});
+     markClean();
+     setSync(true,'Dados enviados e sincronizados');
+   }else{
+     markClean();
+     setSync(true,'Dados recuperados');
+   }
+ }).catch(err=>{console.error('Falha ao sincronizar dados:',err);setSync(false,'Dados locais disponíveis — verifique as regras do Firebase')}).finally(()=>syncBusy=false)
+ }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));syncBusy=false}
 }
-async function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Sincronizando telefone e computador...');markDirty();await setupSync(true);if(remoteReady)await flushLocalToFirebase()}
+function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Enviando e buscando dados na nuvem...');setupSync(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}

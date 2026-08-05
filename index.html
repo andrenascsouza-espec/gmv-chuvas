@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v25.17 • Fazenda Matão</title>
-<link rel="manifest" href="manifest.json?v=2517"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2517"><link rel="icon" type="image/png" href="favicon.png?v=2517"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>GMV Gestão v25.15 • Fazenda Matão</title>
+<link rel="manifest" href="manifest.json?v=2518"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2518"><link rel="icon" type="image/png" href="favicon.png?v=2518"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -42,13 +42,13 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
 }
 canvas{display:block;width:100%;min-height:150px;}
 
-/* v25.17 - logo GMV dourada forte e responsiva */
+/* v25.15 - logo GMV dourada forte e responsiva */
 .right>.section-anchor{position:relative;isolation:isolate;overflow:hidden;}
 .right>.section-anchor::before{
   content:"";
   position:absolute;
   inset:-4%;
-  background-image:url('logo-gmv-watermark.png?v=2517');
+  background-image:url('logo-gmv-watermark.png?v=2518');
   background-repeat:no-repeat;
   background-position:center;
   background-size:min(82%,520px) auto;
@@ -78,7 +78,7 @@ canvas{display:block;width:100%;min-height:150px;}
 @media print{.right>.section-anchor::before{opacity:.08;filter:grayscale(1);}}
 </style></head><body>
 <div class="app page-mode" id="appRoot">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=2517" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.17 • Tema escuro + sincronização</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=2518" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.15 • Logo dourada reforçada</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
  <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar/puxar dados da nuvem">🔄 Sincronizar</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard"><h2>Dashboard da safra</h2><p class="small">Visão geral automática da Fazenda Matão. Atualiza conforme você lança chuva, plantio, operação e produção.</p><div class="grid2" id="dashboardCards"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
@@ -175,10 +175,25 @@ function applyRemoteData(data){
 function setupSync(force=false){
  if(syncBusy)return;setSync(false,'Conectando sincronização...');
  try{const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
- syncDoc.get(force?{source:'server'}:undefined).then(snap=>{if(snap.exists)applyRemoteData(snap.data()||{});remoteReady=true;setSync(true,'Dados recuperados');if(pendingSync())scheduleCloudSave();else markClean()}).catch(err=>{console.error('Falha ao buscar dados:',err);setSync(false,'Dados locais disponíveis — nuvem temporariamente indisponível')}).finally(()=>syncBusy=false)
+ const localHadData=pendingCount()>0;
+ syncDoc.get(force?{source:'server'}:undefined).then(async snap=>{
+   if(snap.exists)applyRemoteData(snap.data()||{});
+   remoteReady=true;
+   // Primeiro sincronismo: envia também os dados antigos que já estavam no aparelho,
+   // mesmo que eles tenham sido criados antes da ativação do Firebase.
+   if(localHadData||pendingSync()||!snap.exists){
+     localStorage.setItem(localUpdatedKey,new Date().toISOString());
+     await syncDoc.set(cloudPayload(),{merge:true});
+     markClean();
+     setSync(true,'Dados enviados e sincronizados');
+   }else{
+     markClean();
+     setSync(true,'Dados recuperados');
+   }
+ }).catch(err=>{console.error('Falha ao sincronizar dados:',err);setSync(false,'Dados locais disponíveis — verifique as regras do Firebase')}).finally(()=>syncBusy=false)
  }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));syncBusy=false}
 }
-function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Buscando anotações na nuvem...');setupSync(true)}
+function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Enviando e buscando dados na nuvem...');setupSync(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
@@ -472,7 +487,7 @@ window.addEventListener('resize',()=>{
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=2513').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2518').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
