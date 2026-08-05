@@ -147,7 +147,7 @@ function syncNow(){
  if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}
  toast('Sincronizando com a nuvem...');
  setupSync(true);
-}toast('Buscando anotações na nuvem...');setupSync(true)}
+}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
