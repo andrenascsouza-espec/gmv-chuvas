@@ -270,6 +270,7 @@ function buildFieldReport(field=selected){
  const area=fieldArea(field); const ps=scopedPlantios().filter(p=>p.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const ops=scopedOperacoes().filter(o=>o.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const rains=scopedRecords().filter(r=>r.field===field).sort((a,b)=>a.date.localeCompare(b.date));
+ const fotosField=scopedFotos().filter(f=>f.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const prod=prodTotals(p=>p.field===field);
  const prodHtml=prod.arr.length?prod.arr.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).map(p=>`<div class="item"><b>${brDate(p.date)}</b> • ${p.placa||'Carreta'} • <b>${fmtKg(p.pesoKg)} kg</b> • ${fmtSc(kgToSacas(p.pesoKg,p.sacaKg))} sc${p.obs?'<br><span class="small">'+p.obs+'</span>':''}</div>`).join(''):'<div class="item">Sem produção lançada neste talhão.</div>';
  const plantHa=plantadoField(field); const colhHa=operacaoField(field,'Colheita');
@@ -295,32 +296,10 @@ function buildDashboard(){
  if(!scopedFotos().length) alerts.push('📷 Nenhuma foto anexada aos talhões nesta safra.');
  dashboardAlerts.innerHTML=alerts.map(a=>`<div class="item">${a}</div>`).join('') || '<div class="item">Tudo certo. Sem alertas principais.</div>';
 }
-function comprimirFoto(file,maxDim=1600,qualidade=0.78){
- return new Promise((resolve,reject)=>{
-  const url=URL.createObjectURL(file); const img=new Image();
-  img.onload=()=>{
-   try{
-    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-    const escala=Math.min(1,maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*escala)); h=Math.max(1,Math.round(h*escala));
-    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-    const ctx=canvas.getContext('2d',{alpha:false}); ctx.drawImage(img,0,0,w,h);
-    URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/jpeg',qualidade));
-   }catch(e){URL.revokeObjectURL(url);reject(e)}
-  };
-  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Formato de foto não suportado'))};
-  img.src=url;
- });
-}
-async function saveFoto(){
+function saveFoto(){
  const file=fotoFile.files && fotoFile.files[0]; if(!file){toast('Escolha uma foto');return}
- const btn=document.getElementById('saveFotoBtn'); const texto=btn?btn.textContent:'';
- try{
-  if(btn){btn.disabled=true;btn.textContent='Reduzindo foto...'}
-  const img=await comprimirFoto(file);
-  const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img,ts:new Date().toISOString()};
-  fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field);
- }catch(e){console.error(e);toast('Não consegui processar essa foto. Tente outra imagem ou um print.')}
- finally{if(btn){btn.disabled=false;btn.textContent=texto||'Salvar foto'}}
+ if(file.size>2500000){toast('Foto muito grande. Tire print/recorte ou envie menor que 2,5 MB');return}
+ const rd=new FileReader(); rd.onload=()=>{const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img:rd.result,ts:new Date().toISOString()}; fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field)}; rd.readAsDataURL(file);
 }
 function deleteFoto(id){const p=prompt('Digite a senha 1234 para apagar esta foto:'); if(p!=='1234'){toast('Senha incorreta');return} fotos=fotos.filter(f=>f.id!==id); saveStore(); refresh(); toast('Foto apagada')}
 function buildFotos(){

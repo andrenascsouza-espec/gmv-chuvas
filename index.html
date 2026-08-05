@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v25.5 • Fazenda Matão</title>
+<title>GMV Gestão v25.11 • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=25"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=25"><link rel="icon" type="image/png" href="favicon.png?v=25"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -42,7 +42,7 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
 }
 </style></head><body>
 <div class="app page-mode" id="appRoot">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.10 Fotos iPhone</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.7 Abas separadas</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
  <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar/puxar dados da nuvem">🔄 Sincronizar</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard"><h2>Dashboard da safra</h2><p class="small">Visão geral automática da Fazenda Matão. Atualiza conforme você lança chuva, plantio, operação e produção.</p><div class="grid2" id="dashboardCards"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
@@ -57,7 +57,7 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
   <div class="card panel section-anchor" id="secGraficos"><h2>Gráficos</h2><h3>Chuva diária do mês</h3><canvas id="dailyChart" height="130"></canvas><h3>Acumulado por talhão</h3><canvas id="fieldChart" height="150"></canvas><h3>Plantio x colheita (ha)</h3><canvas id="progressChart" height="150"></canvas></div>
   <div class="card panel"><h2>Talhão selecionado</h2><div class="grid2"><div class="metric"><span>Hoje</span><b id="mHoje">0</b> mm</div><div class="metric"><span>Mês</span><b id="mMes">0</b> mm</div><div class="metric"><span>Safra</span><b id="mSafra">0</b> mm</div><div class="metric"><span>Última chuva</span><b id="mUltima" style="font-size:16px">--</b></div></div></div>
   <div class="card panel section-anchor" id="secFicha"><h2>Ficha do talhão</h2><div id="fieldReportBox" class="item">Clique em um talhão no mapa para ver o relatório.</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="secondary" onclick="goSection('secLancamento')">Lançar chuva</button><button class="secondary" onclick="goSection('secPlantio')">Plantio</button><button class="secondary" onclick="goSection('secOperacoes')">Operação</button><button class="secondary" onclick="goSection('secFotos')">Fotos</button><button class="secondary" onclick="window.print()">PDF</button></div></div>
-  <div class="card panel section-anchor" id="secFotos"><h2>Fotos do talhão</h2><p class="small">Anexe foto direto no talhão. Fica salvo no aparelho e entra no backup completo.</p><div class="grid2"><div><label>Talhão</label><select id="fotoField"></select></div><div><label>Data</label><input id="fotoDate" type="date"></div></div><div style="margin-top:10px"><label>Foto</label><input id="fotoFile" type="file" accept="image/*" capture="environment"><div class="small" style="margin-top:5px">No celular, tire ou escolha a foto. O sistema reduz automaticamente antes de salvar.</div></div><div style="margin-top:10px"><label>Observação</label><textarea id="fotoObs" rows="2" placeholder="Ex: falha, praga, erosão, área bonita"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveFotoBtn">Salvar foto</button><button class="secondary" id="clearFotosBtn">Apagar fotos da safra</button></div><h3>Fotos salvas</h3><div class="list" id="fotoList"></div></div>
+  <div class="card panel section-anchor" id="secFotos"><h2>Fotos do talhão</h2><p class="small">Anexe foto direto no talhão. Fica salvo no aparelho e entra no backup completo.</p><div class="grid2"><div><label>Talhão</label><select id="fotoField"></select></div><div><label>Data</label><input id="fotoDate" type="date"></div></div><div style="margin-top:10px"><label>Foto</label><input id="fotoFile" type="file" accept="image/*" capture="environment"><div class="small" style="margin-top:5px">No celular, toque aqui para tirar foto na hora e salvar no talhão.</div></div><div style="margin-top:10px"><label>Observação</label><textarea id="fotoObs" rows="2" placeholder="Ex: falha, praga, erosão, área bonita"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveFotoBtn">Salvar foto</button><button class="secondary" id="clearFotosBtn">Apagar fotos da safra</button></div><h3>Fotos salvas</h3><div class="list" id="fotoList"></div></div>
   <div class="card panel section-anchor" id="secHistorico"><h2>Últimos lançamentos</h2><div class="list" id="historyList"></div></div>
   <div class="card panel section-anchor" id="secRelatorios"><h2>Relatório rápido</h2><div id="reportBox" class="item"></div></div>
   <div class="card panel section-anchor" id="secSafras"><h2>Safras</h2><p class="small">Use uma safra para cada ciclo. Ex.: Soja 26/27, Milho 27, Soja 27/28. Os lançamentos ficam separados por safra.</p><div class="grid2"><div><label>Nome da safra</label><input id="safraName" placeholder="Ex: Soja 27/28"></div><div><label>Cultura</label><select id="safraCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Braquiária</option><option>Outro</option></select></div></div><div class="grid2" style="margin-top:10px"><div><label>Data início</label><input id="safraStart" type="date"></div><div><label>Data final</label><input id="safraEnd" type="date"></div></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveSafraBtn">Salvar nova safra</button><button class="secondary" id="setSafraBtn">Usar safra selecionada</button></div><h3>Safras cadastradas</h3><div class="list" id="safraList"></div></div>
@@ -339,6 +339,7 @@ function buildFieldReport(field=selected){
  const area=fieldArea(field); const ps=scopedPlantios().filter(p=>p.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const ops=scopedOperacoes().filter(o=>o.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const rains=scopedRecords().filter(r=>r.field===field).sort((a,b)=>a.date.localeCompare(b.date));
+ const fotosField=scopedFotos().filter(f=>f.field===field).sort((a,b)=>a.date.localeCompare(b.date));
  const prod=prodTotals(p=>p.field===field);
  const prodHtml=prod.arr.length?prod.arr.slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).map(p=>`<div class="item"><b>${brDate(p.date)}</b> • ${p.placa||'Carreta'} • <b>${fmtKg(p.pesoKg)} kg</b> • ${fmtSc(kgToSacas(p.pesoKg,p.sacaKg))} sc${p.obs?'<br><span class="small">'+p.obs+'</span>':''}</div>`).join(''):'<div class="item">Sem produção lançada neste talhão.</div>';
  const plantHa=plantadoField(field); const colhHa=operacaoField(field,'Colheita');
@@ -364,32 +365,39 @@ function buildDashboard(){
  if(!scopedFotos().length) alerts.push('📷 Nenhuma foto anexada aos talhões nesta safra.');
  dashboardAlerts.innerHTML=alerts.map(a=>`<div class="item">${a}</div>`).join('') || '<div class="item">Tudo certo. Sem alertas principais.</div>';
 }
-function comprimirFoto(file,maxDim=1600,qualidade=0.78){
+async function compressImageForStorage(file){
  return new Promise((resolve,reject)=>{
-  const url=URL.createObjectURL(file); const img=new Image();
-  img.onload=()=>{
-   try{
+  const reader=new FileReader();
+  reader.onerror=()=>reject(new Error('Não foi possível ler a foto'));
+  reader.onload=()=>{
+   const img=new Image();
+   img.onerror=()=>reject(new Error('Formato de foto não suportado'));
+   img.onload=()=>{
+    const maxSide=1600;
     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
-    const escala=Math.min(1,maxDim/Math.max(w,h)); w=Math.max(1,Math.round(w*escala)); h=Math.max(1,Math.round(h*escala));
+    const scale=Math.min(1,maxSide/Math.max(w,h));
+    w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
     const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-    const ctx=canvas.getContext('2d',{alpha:false}); ctx.drawImage(img,0,0,w,h);
-    URL.revokeObjectURL(url); resolve(canvas.toDataURL('image/jpeg',qualidade));
-   }catch(e){URL.revokeObjectURL(url);reject(e)}
+    const ctx=canvas.getContext('2d',{alpha:false});
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+    let quality=.82;
+    let data=canvas.toDataURL('image/jpeg',quality);
+    while(data.length>1400000 && quality>.48){quality-=.08;data=canvas.toDataURL('image/jpeg',quality)}
+    resolve(data);
+   };
+   img.src=reader.result;
   };
-  img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Formato de foto não suportado'))};
-  img.src=url;
+  reader.readAsDataURL(file);
  });
 }
 async function saveFoto(){
  const file=fotoFile.files && fotoFile.files[0]; if(!file){toast('Escolha uma foto');return}
- const btn=document.getElementById('saveFotoBtn'); const texto=btn?btn.textContent:'';
  try{
-  if(btn){btn.disabled=true;btn.textContent='Reduzindo foto...'}
-  const img=await comprimirFoto(file);
+  toast('Reduzindo foto…');
+  const img=await compressImageForStorage(file);
   const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img,ts:new Date().toISOString()};
   fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field);
- }catch(e){console.error(e);toast('Não consegui processar essa foto. Tente outra imagem ou um print.')}
- finally{if(btn){btn.disabled=false;btn.textContent=texto||'Salvar foto'}}
+ }catch(err){console.error(err);toast('Não foi possível salvar a foto. Tente outra imagem.')}
 }
 function deleteFoto(id){const p=prompt('Digite a senha 1234 para apagar esta foto:'); if(p!=='1234'){toast('Senha incorreta');return} fotos=fotos.filter(f=>f.id!==id); saveStore(); refresh(); toast('Foto apagada')}
 function buildFotos(){
@@ -443,10 +451,17 @@ if(document.getElementById('setSafraBtn')) setSafraBtn.onclick=()=>setSafra(safr
 if(document.getElementById('syncNowBtn')) syncNowBtn.onclick=syncNow;
 
 dateInput.onchange=refresh;
-function goSection(id){
+function goSection(id, smooth=true){
  const el=document.getElementById(id); if(!el) return;
- el.scrollIntoView({behavior:'smooth',block:'start'});
- if(id==='secMapa') setTimeout(()=>map.invalidateSize(),250);
+ const mobile=window.matchMedia('(max-width:1050px)').matches;
+ if(mobile){
+  document.querySelectorAll('#appRoot .active-page').forEach(x=>x.classList.remove('active-page'));
+  el.classList.add('active-page');
+  window.scrollTo({top:0,behavior:smooth?'smooth':'auto'});
+ }else{
+  el.scrollIntoView({behavior:smooth?'smooth':'auto',block:'start'});
+ }
+ if(id==='secMapa') setTimeout(()=>map.invalidateSize(),300);
  document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',b.dataset.target===id));
 }
 document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>goSection(b.dataset.target));
@@ -460,9 +475,14 @@ fillSafraSelect();
 updateHarvestPreview();
 selectField('Sede',false);
 setupSync();
+goSection('secMapa',false);
+window.addEventListener('resize',()=>{
+ if(window.matchMedia('(max-width:1050px)').matches && !document.querySelector('#appRoot .active-page')) goSection('secMapa',false);
+ if(typeof map!=='undefined') setTimeout(()=>map.invalidateSize(),150);
+});
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=2510').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2511').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
