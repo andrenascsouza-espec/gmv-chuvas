@@ -71,28 +71,83 @@ function normalizeList(arr,type){return (Array.isArray(arr)?arr:[]).map(x=>norma
 function applyRemoteData(data){
  records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos,'foto'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh()
 }
-function setupSync(force=false){
- if(syncBusy)return;setSync(false,'Conectando sincronização...');
- try{const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
- const localHadData=pendingCount()>0;
- syncDoc.get(force?{source:'server'}:undefined).then(async snap=>{
-   if(snap.exists)applyRemoteData(snap.data()||{});
-   remoteReady=true;
-   // Primeiro sincronismo: envia também os dados antigos que já estavam no aparelho,
-   // mesmo que eles tenham sido criados antes da ativação do Firebase.
-   if(localHadData||pendingSync()||!snap.exists){
-     localStorage.setItem(localUpdatedKey,new Date().toISOString());
-     await syncDoc.set(cloudPayload(),{merge:true});
-     markClean();
-     setSync(true,'Dados enviados e sincronizados');
-   }else{
-     markClean();
-     setSync(true,'Dados recuperados');
-   }
- }).catch(err=>{console.error('Falha ao sincronizar dados:',err);setSync(false,'Dados locais disponíveis — verifique as regras do Firebase')}).finally(()=>syncBusy=false)
- }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));syncBusy=false}
+function hasBusinessData(data){
+ if(!data||typeof data!=='object')return false;
+ return ['records','plantios','operacoes','producoes'].some(k=>Array.isArray(data[k])&&data[k].length>0);
 }
-function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Enviando e buscando dados na nuvem...');setupSync(true)}
+async function restoreBundledBackup(){
+ if(localStorage.getItem('gmv_backup_restaurado_v2519')==='1')return false;
+ try{
+  const r=await fetch('backup_restauracao_soja_26_27.json?v=2519',{cache:'no-store'});
+  if(!r.ok)throw new Error('backup não encontrado');
+  const data=await r.json();
+  if(data.safra){
+   const s=data.safra;
+   if(!safras.some(x=>x.id===s.id))safras.push(s);
+   currentSafra=s.id||currentSafra;
+  }
+  records=mergeArrays(records,normalizeList(data.records||[],'record'));
+  plantios=mergeArrays(plantios,normalizeList(data.plantios||[],'plantio'));
+  operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||[],'operacao'));
+  producoes=mergeArrays(producoes,normalizeList(data.producoes||[],'producao'));
+  fotos=mergeArrays(fotos,normalizeList(data.fotos||[],'foto'));
+  ensureSafraIds();fillSafraSelect();saveStore(false);refresh();
+  localStorage.setItem('gmv_backup_restaurado_v2519','1');
+  markDirty();
+  toast('Backup recuperado com sucesso');
+  return true;
+ }catch(e){console.warn('Backup automático não restaurado:',e);return false}
+}
+function startRealtimeListener(){
+ if(!syncDoc||unsubscribeSync)return;
+ unsubscribeSync=syncDoc.onSnapshot(snap=>{
+  if(!snap.exists)return;
+  applyingRemote=true;
+  try{applyRemoteData(snap.data()||{});setSync(true,'Atualizado em tempo real')}
+  finally{applyingRemote=false}
+ },err=>{console.error('Escuta em tempo real:',err);setSync(false,'Nuvem indisponível')});
+}
+async function setupSync(force=false){
+ if(syncBusy)return;
+ setSync(false,'Conectando sincronização...');
+ try{
+  const cfg=window.GMV_FIREBASE_CONFIG||{};
+  if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}
+  if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}
+  if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);
+  db=firebase.firestore();
+  try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}
+  syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');
+  syncBusy=true;
+  const snap=await syncDoc.get(force?{source:'server'}:undefined);
+  const remote=snap.exists?(snap.data()||{}):{};
+  const localHadData=pendingCount()>0;
+  if(hasBusinessData(remote)){
+   applyingRemote=true;
+   try{applyRemoteData(remote)}finally{applyingRemote=false}
+  }else if(!localHadData){
+   await restoreBundledBackup();
+  }
+  remoteReady=true;
+  startRealtimeListener();
+  // Sempre envia o conteúdo mesclado no primeiro acesso. Isso leva os dados antigos do iPhone para a nuvem.
+  if(pendingCount()>0){
+   await syncDoc.set(cloudPayload(),{merge:true});
+   markClean();
+   setSync(true,'Dados enviados e sincronizados');
+  }else{
+   setSync(true,'Conectado — sem lançamentos');
+  }
+ }catch(err){
+  console.error('Falha ao sincronizar:',err);
+  setSync(false,'Dados locais disponíveis — verifique as regras do Firebase');
+ }finally{syncBusy=false}
+}
+function syncNow(){
+ if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}
+ toast('Sincronizando com a nuvem...');
+ setupSync(true);
+}toast('Buscando anotações na nuvem...');setupSync(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
@@ -386,7 +441,7 @@ window.addEventListener('resize',()=>{
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=2513').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2519').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
