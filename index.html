@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v25.11 • Fazenda Matão</title>
+<title>GMV Gestão v25.13 • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=25"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=25"><link rel="icon" type="image/png" href="favicon.png?v=25"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -40,6 +40,7 @@ window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
   .app.page-mode .mapwrap.active-page{display:block!important;height:calc(100vh - 98px);min-height:520px}
   .app.page-mode{display:block;min-height:100vh;overflow:auto}
 }
+canvas{display:block;width:100%;min-height:150px;}
 </style></head><body>
 <div class="app page-mode" id="appRoot">
  <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=25" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.7 Abas separadas</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
@@ -100,96 +101,49 @@ ensureSafraIds();
 let selected=FIELDS[0].name; let layers={};
 const today=new Date().toISOString().slice(0,10); dateInput.value=today;
 
-let db=null, syncDoc=null, unsubscribeSync=null, remoteReady=false, applyingRemote=false;
+let db=null, syncDoc=null, unsubscribeSync=null, remoteReady=false, applyingRemote=false, syncBusy=false, syncTimer=null;
 const dirtyKey='gmv_sync_dirty_v23';
 const localUpdatedKey='gmv_sync_local_updated_v23';
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
 function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString())}
 function markClean(){localStorage.removeItem(dirtyKey)}
 function pendingCount(){return records.length+plantios.length+operacoes.length+producoes.length+fotos.length}
+function cloudPayload(){return {records,plantios,operacoes,producoes,safras,updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString()}}
+function scheduleCloudSave(){clearTimeout(syncTimer);syncTimer=setTimeout(flushLocalToFirebase,5000)}
 function flushLocalToFirebase(){
-  if(!syncDoc || !navigator.onLine){ setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho'); return; }
-  syncDoc.set({records, plantios, operacoes, producoes, fotos, safras, updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString()}, {merge:true})
-    .then(()=>{markClean();setSync(true,'Sincronizado')})
-    .catch(()=>setSync(false,'Offline — aguardando sincronização'));
+ if(syncBusy)return;
+ if(!syncDoc||!navigator.onLine){setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho');return}
+ syncBusy=true;
+ syncDoc.set(cloudPayload(),{merge:true}).then(()=>{markClean();setSync(true,'Sincronizado')}).catch(err=>{console.error('Falha ao enviar:',err);setSync(false,'Salvo no aparelho — nuvem indisponível')}).finally(()=>syncBusy=false)
 }
 function saveStore(upload=true){
-  localStorage.setItem(storeKey,JSON.stringify(records));
-  localStorage.setItem(plantKey,JSON.stringify(plantios));
-  localStorage.setItem(opKey,JSON.stringify(operacoes));
-  localStorage.setItem(prodKey,JSON.stringify(producoes));
-  localStorage.setItem(fotoKey,JSON.stringify(fotos));
-  localStorage.setItem(safraKey,JSON.stringify(safras));
-  localStorage.setItem('gmv_safra_atual',currentSafra);
-  if(upload && !applyingRemote){
-    markDirty();
-    if(remoteReady && syncDoc && navigator.onLine){ flushLocalToFirebase(); }
-    else { setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho'); }
-  }
+ localStorage.setItem(storeKey,JSON.stringify(records));localStorage.setItem(plantKey,JSON.stringify(plantios));localStorage.setItem(opKey,JSON.stringify(operacoes));localStorage.setItem(prodKey,JSON.stringify(producoes));localStorage.setItem(fotoKey,JSON.stringify(fotos));localStorage.setItem(safraKey,JSON.stringify(safras));localStorage.setItem('gmv_safra_atual',currentSafra);
+ if(upload&&!applyingRemote){markDirty();if(remoteReady&&syncDoc&&navigator.onLine)scheduleCloudSave();else setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho')}
 }
-function setSync(ok,msg){
-  let t;
-  if(ok){ t='🟢 '+(msg||'Sincronizado'); }
-  else if(!navigator.onLine){ t='🟡 '+(msg||'Offline — salvo no aparelho'); }
-  else { t='🔴 '+(msg||'Local'); }
-  const a=document.getElementById('syncStatus'); if(a) a.textContent=t;
-  const b=document.getElementById('syncStatusSide'); if(b) b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho');
+function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Sincronizado');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🔴 '+(msg||'Local');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho')}
+function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''))}
+function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0}
+function mergeArrays(localArr,remoteArr){const map=new Map();[...(Array.isArray(remoteArr)?remoteArr:[]),...(Array.isArray(localArr)?localArr:[])].forEach(item=>{if(!item)return;const k=syncArrayKey(item),old=map.get(k);if(!old||syncTime(item)>=syncTime(old))map.set(k,item)});return Array.from(map.values())}
+function normalizeItem(x,type){
+ if(!x||typeof x!=='object')return null;const y={...x};
+ y.field=y.field||y.talhao||y.talhão||y.nomeTalhao||'';y.date=y.date||y.data||'';y.resp=y.resp||y.responsavel||y.responsável||'';y.obs=y.obs||y.observacao||y.observação||'';
+ if(type==='record')y.mm=Number(y.mm??y.chuva??y.valor??0);
+ if(type==='plantio'){y.culture=y.culture||y.cultura||'';y.cultivar=y.cultivar||y.variedade||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.harvest=y.harvest||y.colheita||y.previsaoColheita||''}
+ if(type==='operacao'){y.op=y.op||y.operacao||y.operação||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.maquina=y.maquina||y.máquina||''}
+ if(type==='producao'){y.culture=y.culture||y.cultura||'';y.pesoKg=Number(y.pesoKg??y.peso??y.kg??0);y.sacaKg=Number(y.sacaKg||60);y.placa=y.placa||y.caminhao||y.caminhão||''}
+ y.id=y.id||y.ts||[type,y.date,y.field,Math.random().toString(36).slice(2,8)].join('_');y.ts=y.ts||y.updatedAt||(y.date?y.date+'T12:00:00.000Z':new Date().toISOString());if(!y.safraId)y.safraId=currentSafra;if(!y.safraName)y.safraName=(safras.find(s=>s.id===y.safraId)||activeSafra()).name;return y
 }
-function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''));}
-function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0;}
-function mergeArrays(localArr, remoteArr){
-  const map=new Map();
-  [...(Array.isArray(remoteArr)?remoteArr:[]), ...(Array.isArray(localArr)?localArr:[])].forEach(item=>{
-    if(!item) return;
-    const k=syncArrayKey(item);
-    const old=map.get(k);
-    if(!old || syncTime(item)>=syncTime(old)) map.set(k,item);
-  });
-  return Array.from(map.values());
+function normalizeList(arr,type){return (Array.isArray(arr)?arr:[]).map(x=>normalizeItem(x,type)).filter(Boolean)}
+function applyRemoteData(data){
+ records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos,'foto'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh()
 }
-function setupSync(){
-  setSync(false,'Conectando sincronização...');
-  try{
-    const cfg=window.GMV_FIREBASE_CONFIG||{};
-    if(!cfg.apiKey || String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return;}
-    if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return;}
-    if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
-    db=firebase.firestore();
-    try{ firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{}); }catch(e){}
-    syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');
-    unsubscribeSync=syncDoc.onSnapshot(snap=>{
-      remoteReady=true;
-      const data=snap.exists ? (snap.data()||{}) : {};
-      // junta os dados da nuvem com os dados locais deste aparelho
-      records=mergeArrays(records,data.records);
-      plantios=mergeArrays(plantios,data.plantios);
-      operacoes=mergeArrays(operacoes,data.operacoes);
-      producoes=mergeArrays(producoes,data.producoes);
-      fotos=mergeArrays(fotos,data.fotos);
-      if(Array.isArray(data.safras)&&data.safras.length) safras=mergeArrays(safras,data.safras);
-      if(!safras.find(s=>s.id===currentSafra)) currentSafra=(safras[0]&&safras[0].id)||currentSafra;
-      ensureSafraIds();
-      fillSafraSelect();
-      saveStore(false);
-      refresh();
-      setSync(true,'Sincronizado');
-      markClean();
-      // envia imediatamente o pacote completo mesclado para a nuvem
-      // isso faz o dado lançado no PC aparecer no telefone e o do telefone aparecer no PC
-      const payload={records, plantios, operacoes, producoes, fotos, safras, updatedAt:new Date().toISOString()};
-      syncDoc.set(payload,{merge:true}).catch(err=>{console.error(err);setSync(false,'Erro ao enviar para nuvem')});
-    },(err)=>{console.error(err); setSync(false,navigator.onLine?'Firebase bloqueado/sem permissão':'Offline — salvo no aparelho')});
-    window.addEventListener('online',()=>{setSync(false,'Enviando dados salvos...'); setTimeout(flushLocalToFirebase,800)});
-    window.addEventListener('offline',()=>setSync(false,'Offline — salvo no aparelho'));
-    setTimeout(()=>{ if(!remoteReady && navigator.onLine) setSync(false,'Conectando... se ficar assim, atualize a página'); },4000);
-  }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));}
+function setupSync(force=false){
+ if(syncBusy)return;setSync(false,'Conectando sincronização...');
+ try{const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
+ syncDoc.get(force?{source:'server'}:undefined).then(snap=>{if(snap.exists)applyRemoteData(snap.data()||{});remoteReady=true;setSync(true,'Dados recuperados');if(pendingSync())scheduleCloudSave();else markClean()}).catch(err=>{console.error('Falha ao buscar dados:',err);setSync(false,'Dados locais disponíveis — nuvem temporariamente indisponível')}).finally(()=>syncBusy=false)
+ }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));syncBusy=false}
 }
-function syncNow(){
-  if(!syncDoc){ setupSync(); setTimeout(syncNow,1500); return; }
-  flushLocalToFirebase();
-  toast('Sincronizando dados...');
-}
-
+function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Buscando anotações na nuvem...');setupSync(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
@@ -241,7 +195,7 @@ csvBtn.onclick=()=>{let csv='TIPO;data;talhao;mm/cultura;responsavel;observacao\
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 
 function drawBarChart(canvasId, labels, values){
- const c=document.getElementById(canvasId); if(!c) return; const ctx=c.getContext('2d'); const w=c.width=c.clientWidth*devicePixelRatio; const h=c.height=c.clientHeight*devicePixelRatio; ctx.clearRect(0,0,w,h); ctx.scale(devicePixelRatio,devicePixelRatio); const W=c.clientWidth,H=c.clientHeight,p=28; const max=Math.max(1,...values); ctx.font='11px Arial'; ctx.fillStyle='#a9c8bc'; ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1; for(let i=0;i<4;i++){let y=p+(H-p*1.5)*i/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-8,y); ctx.stroke();}
+ const c=document.getElementById(canvasId); if(!c) return; const ctx=c.getContext('2d'); const dpr=Math.max(1,window.devicePixelRatio||1); const W=Math.max(280,(c.parentElement&&c.parentElement.clientWidth)||c.clientWidth||320); const H=canvasId==='dailyChart'?150:170; c.style.display='block'; c.style.width='100%'; c.style.height=H+'px'; c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); const p=28; const max=Math.max(1,...values); ctx.font='11px Arial'; ctx.fillStyle='#a9c8bc'; ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1; for(let i=0;i<4;i++){let y=p+(H-p*1.5)*i/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-8,y); ctx.stroke();}
  const bw=(W-p-16)/labels.length; values.forEach((v,i)=>{let bh=(H-p*2)*v/max; let x=p+i*bw+2; let y=H-p-bh; const grad=ctx.createLinearGradient(0,y,0,H-p); grad.addColorStop(0,'#ffd34d'); grad.addColorStop(1,'#2fe07d'); ctx.fillStyle=grad; ctx.fillRect(x,y,Math.max(3,bw-4),bh); ctx.fillStyle='#a9c8bc'; if(labels.length<=12) ctx.fillText(labels[i],x,H-8);}); ctx.fillStyle='#ffd34d'; ctx.fillText(max.toFixed(0)+' mm',p,14);
 }
 function drawCharts(){const base=dateInput.value||today; const ym=monthOf(base); const days=[...new Set(scopedRecords().filter(r=>monthOf(r.date)==ym).map(r=>r.date))].sort(); const labels=days.map(d=>d.slice(8)); const vals=days.map(d=>chuvaMediaDia(d)); drawBarChart('dailyChart',labels.length?labels:['--'],vals.length?vals:[0]); const fLabels=FIELDS.map(f=>f.name); const fVals=FIELDS.map(f=>sum(r=>r.field==f.name)); drawBarChart('fieldChart',fLabels,fVals); drawBarChart('progressChart',['Plantado','Colhido'],[totalPlantado(),totalOperacao('Colheita')]);}
@@ -462,6 +416,7 @@ function goSection(id, smooth=true){
   el.scrollIntoView({behavior:smooth?'smooth':'auto',block:'start'});
  }
  if(id==='secMapa') setTimeout(()=>map.invalidateSize(),300);
+ if(id==='secGraficos') setTimeout(drawCharts,150);
  document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',b.dataset.target===id));
 }
 document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>goSection(b.dataset.target));
@@ -482,7 +437,7 @@ window.addEventListener('resize',()=>{
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=2511').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2513').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}

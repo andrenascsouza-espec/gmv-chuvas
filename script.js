@@ -35,92 +35,49 @@ ensureSafraIds();
 let selected=FIELDS[0].name; let layers={};
 const today=new Date().toISOString().slice(0,10); dateInput.value=today;
 
-let db=null, syncDoc=null, unsubscribeSync=null, remoteReady=false, applyingRemote=false;
+let db=null, syncDoc=null, unsubscribeSync=null, remoteReady=false, applyingRemote=false, syncBusy=false, syncTimer=null;
 const dirtyKey='gmv_sync_dirty_v23';
 const localUpdatedKey='gmv_sync_local_updated_v23';
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
 function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString())}
 function markClean(){localStorage.removeItem(dirtyKey)}
 function pendingCount(){return records.length+plantios.length+operacoes.length+producoes.length+fotos.length}
+function cloudPayload(){return {records,plantios,operacoes,producoes,safras,updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString()}}
+function scheduleCloudSave(){clearTimeout(syncTimer);syncTimer=setTimeout(flushLocalToFirebase,5000)}
 function flushLocalToFirebase(){
-  if(!syncDoc || !navigator.onLine){ setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho'); return; }
-  syncDoc.set({records, plantios, operacoes, producoes, fotos, safras, updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString()}, {merge:true})
-    .then(()=>{markClean();setSync(true,'Sincronizado')})
-    .catch(()=>setSync(false,'Offline — aguardando sincronização'));
+ if(syncBusy)return;
+ if(!syncDoc||!navigator.onLine){setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho');return}
+ syncBusy=true;
+ syncDoc.set(cloudPayload(),{merge:true}).then(()=>{markClean();setSync(true,'Sincronizado')}).catch(err=>{console.error('Falha ao enviar:',err);setSync(false,'Salvo no aparelho — nuvem indisponível')}).finally(()=>syncBusy=false)
 }
 function saveStore(upload=true){
-  localStorage.setItem(storeKey,JSON.stringify(records));
-  localStorage.setItem(plantKey,JSON.stringify(plantios));
-  localStorage.setItem(opKey,JSON.stringify(operacoes));
-  localStorage.setItem(prodKey,JSON.stringify(producoes));
-  localStorage.setItem(fotoKey,JSON.stringify(fotos));
-  localStorage.setItem(safraKey,JSON.stringify(safras));
-  localStorage.setItem('gmv_safra_atual',currentSafra);
-  if(upload && !applyingRemote){
-    markDirty();
-    if(remoteReady && syncDoc && navigator.onLine){ flushLocalToFirebase(); }
-    else { setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho'); }
-  }
+ localStorage.setItem(storeKey,JSON.stringify(records));localStorage.setItem(plantKey,JSON.stringify(plantios));localStorage.setItem(opKey,JSON.stringify(operacoes));localStorage.setItem(prodKey,JSON.stringify(producoes));localStorage.setItem(fotoKey,JSON.stringify(fotos));localStorage.setItem(safraKey,JSON.stringify(safras));localStorage.setItem('gmv_safra_atual',currentSafra);
+ if(upload&&!applyingRemote){markDirty();if(remoteReady&&syncDoc&&navigator.onLine)scheduleCloudSave();else setSync(false,'Offline — '+pendingCount()+' registros salvos no aparelho')}
 }
-function setSync(ok,msg){
-  let t;
-  if(ok){ t='🟢 '+(msg||'Sincronizado'); }
-  else if(!navigator.onLine){ t='🟡 '+(msg||'Offline — salvo no aparelho'); }
-  else { t='🔴 '+(msg||'Local'); }
-  const a=document.getElementById('syncStatus'); if(a) a.textContent=t;
-  const b=document.getElementById('syncStatusSide'); if(b) b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho');
+function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Sincronizado');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🔴 '+(msg||'Local');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?'Online: dados sincronizados em todos aparelhos':(msg||'Modo offline/local: dados salvos no aparelho')}
+function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''))}
+function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0}
+function mergeArrays(localArr,remoteArr){const map=new Map();[...(Array.isArray(remoteArr)?remoteArr:[]),...(Array.isArray(localArr)?localArr:[])].forEach(item=>{if(!item)return;const k=syncArrayKey(item),old=map.get(k);if(!old||syncTime(item)>=syncTime(old))map.set(k,item)});return Array.from(map.values())}
+function normalizeItem(x,type){
+ if(!x||typeof x!=='object')return null;const y={...x};
+ y.field=y.field||y.talhao||y.talhão||y.nomeTalhao||'';y.date=y.date||y.data||'';y.resp=y.resp||y.responsavel||y.responsável||'';y.obs=y.obs||y.observacao||y.observação||'';
+ if(type==='record')y.mm=Number(y.mm??y.chuva??y.valor??0);
+ if(type==='plantio'){y.culture=y.culture||y.cultura||'';y.cultivar=y.cultivar||y.variedade||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.harvest=y.harvest||y.colheita||y.previsaoColheita||''}
+ if(type==='operacao'){y.op=y.op||y.operacao||y.operação||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.maquina=y.maquina||y.máquina||''}
+ if(type==='producao'){y.culture=y.culture||y.cultura||'';y.pesoKg=Number(y.pesoKg??y.peso??y.kg??0);y.sacaKg=Number(y.sacaKg||60);y.placa=y.placa||y.caminhao||y.caminhão||''}
+ y.id=y.id||y.ts||[type,y.date,y.field,Math.random().toString(36).slice(2,8)].join('_');y.ts=y.ts||y.updatedAt||(y.date?y.date+'T12:00:00.000Z':new Date().toISOString());if(!y.safraId)y.safraId=currentSafra;if(!y.safraName)y.safraName=(safras.find(s=>s.id===y.safraId)||activeSafra()).name;return y
 }
-function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''));}
-function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0;}
-function mergeArrays(localArr, remoteArr){
-  const map=new Map();
-  [...(Array.isArray(remoteArr)?remoteArr:[]), ...(Array.isArray(localArr)?localArr:[])].forEach(item=>{
-    if(!item) return;
-    const k=syncArrayKey(item);
-    const old=map.get(k);
-    if(!old || syncTime(item)>=syncTime(old)) map.set(k,item);
-  });
-  return Array.from(map.values());
+function normalizeList(arr,type){return (Array.isArray(arr)?arr:[]).map(x=>normalizeItem(x,type)).filter(Boolean)}
+function applyRemoteData(data){
+ records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos,'foto'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh()
 }
-function setupSync(){
-  setSync(false,'Conectando sincronização...');
-  try{
-    const cfg=window.GMV_FIREBASE_CONFIG||{};
-    if(!cfg.apiKey || String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return;}
-    if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou');return;}
-    if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
-    db=firebase.firestore();
-    try{ firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{}); }catch(e){}
-    syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');
-    unsubscribeSync=syncDoc.onSnapshot(snap=>{
-      const data=snap.data()||{};
-      remoteReady=true;
-      const oldPack=JSON.stringify({records,plantios,operacoes,producoes,fotos,safras});
-      records=mergeArrays(records,data.records);
-      plantios=mergeArrays(plantios,data.plantios);
-      operacoes=mergeArrays(operacoes,data.operacoes);
-      producoes=mergeArrays(producoes,data.producoes);
-      fotos=mergeArrays(fotos,data.fotos);
-      if(Array.isArray(data.safras)&&data.safras.length) safras=mergeArrays(safras,data.safras);
-      if(!safras.find(s=>s.id===currentSafra)) currentSafra=(safras[0]&&safras[0].id)||currentSafra;
-      ensureSafraIds();
-      fillSafraSelect();
-      saveStore(false);
-      const newPack=JSON.stringify({records,plantios,operacoes,producoes,fotos,safras});
-      const remotePack=JSON.stringify({records:data.records||[],plantios:data.plantios||[],operacoes:data.operacoes||[],producoes:data.producoes||[],fotos:data.fotos||[],safras:data.safras||[]});
-      refresh();
-      setSync(true,'Sincronizado');
-      markClean();
-      // Se tem dado novo neste aparelho que ainda não existe na nuvem, manda para os outros aparelhos.
-      if(newPack!==remotePack){
-        setTimeout(()=>syncDoc.set({records, plantios, operacoes, producoes, fotos, safras, updatedAt:new Date().toISOString()}, {merge:true}).catch(()=>setSync(false,'Erro ao enviar para nuvem')),250);
-      }
-    },(err)=>{console.error(err); setSync(false,navigator.onLine?'Sem conexão com Firebase':'Offline — salvo no aparelho')});
-    window.addEventListener('online',()=>{setSync(false,'Enviando dados salvos...'); setTimeout(flushLocalToFirebase,800)});
-    window.addEventListener('offline',()=>setSync(false,'Offline — salvo no aparelho'));
-  }catch(e){console.error(e);setSync(false,'Local');}
+function setupSync(force=false){
+ if(syncBusy)return;setSync(false,'Conectando sincronização...');
+ try{const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_')){setSync(false,'Firebase não configurado');return}if(typeof firebase==='undefined'){setSync(false,'Firebase não carregou. Atualize a página.');return}if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');syncBusy=true;
+ syncDoc.get(force?{source:'server'}:undefined).then(snap=>{if(snap.exists)applyRemoteData(snap.data()||{});remoteReady=true;setSync(true,'Dados recuperados');if(pendingSync())scheduleCloudSave();else markClean()}).catch(err=>{console.error('Falha ao buscar dados:',err);setSync(false,'Dados locais disponíveis — nuvem temporariamente indisponível')}).finally(()=>syncBusy=false)
+ }catch(e){console.error(e);setSync(false,'Erro de sincronização: '+(e&&e.message?e.message:'Local'));syncBusy=false}
 }
-
+function syncNow(){if(!navigator.onLine){setSync(false,'Offline — salvo no aparelho');toast('Sem internet agora');return}toast('Buscando anotações na nuvem...');setupSync(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
@@ -172,7 +129,7 @@ csvBtn.onclick=()=>{let csv='TIPO;data;talhao;mm/cultura;responsavel;observacao\
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();}
 
 function drawBarChart(canvasId, labels, values){
- const c=document.getElementById(canvasId); if(!c) return; const ctx=c.getContext('2d'); const w=c.width=c.clientWidth*devicePixelRatio; const h=c.height=c.clientHeight*devicePixelRatio; ctx.clearRect(0,0,w,h); ctx.scale(devicePixelRatio,devicePixelRatio); const W=c.clientWidth,H=c.clientHeight,p=28; const max=Math.max(1,...values); ctx.font='11px Arial'; ctx.fillStyle='#a9c8bc'; ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1; for(let i=0;i<4;i++){let y=p+(H-p*1.5)*i/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-8,y); ctx.stroke();}
+ const c=document.getElementById(canvasId); if(!c) return; const ctx=c.getContext('2d'); const dpr=Math.max(1,window.devicePixelRatio||1); const W=Math.max(280,(c.parentElement&&c.parentElement.clientWidth)||c.clientWidth||320); const H=canvasId==='dailyChart'?150:170; c.style.display='block'; c.style.width='100%'; c.style.height=H+'px'; c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H); const p=28; const max=Math.max(1,...values); ctx.font='11px Arial'; ctx.fillStyle='#a9c8bc'; ctx.strokeStyle='#ffffff22'; ctx.lineWidth=1; for(let i=0;i<4;i++){let y=p+(H-p*1.5)*i/3; ctx.beginPath(); ctx.moveTo(p,y); ctx.lineTo(W-8,y); ctx.stroke();}
  const bw=(W-p-16)/labels.length; values.forEach((v,i)=>{let bh=(H-p*2)*v/max; let x=p+i*bw+2; let y=H-p-bh; const grad=ctx.createLinearGradient(0,y,0,H-p); grad.addColorStop(0,'#ffd34d'); grad.addColorStop(1,'#2fe07d'); ctx.fillStyle=grad; ctx.fillRect(x,y,Math.max(3,bw-4),bh); ctx.fillStyle='#a9c8bc'; if(labels.length<=12) ctx.fillText(labels[i],x,H-8);}); ctx.fillStyle='#ffd34d'; ctx.fillText(max.toFixed(0)+' mm',p,14);
 }
 function drawCharts(){const base=dateInput.value||today; const ym=monthOf(base); const days=[...new Set(scopedRecords().filter(r=>monthOf(r.date)==ym).map(r=>r.date))].sort(); const labels=days.map(d=>d.slice(8)); const vals=days.map(d=>chuvaMediaDia(d)); drawBarChart('dailyChart',labels.length?labels:['--'],vals.length?vals:[0]); const fLabels=FIELDS.map(f=>f.name); const fVals=FIELDS.map(f=>sum(r=>r.field==f.name)); drawBarChart('fieldChart',fLabels,fVals); drawBarChart('progressChart',['Plantado','Colhido'],[totalPlantado(),totalOperacao('Colheita')]);}
@@ -296,10 +253,39 @@ function buildDashboard(){
  if(!scopedFotos().length) alerts.push('📷 Nenhuma foto anexada aos talhões nesta safra.');
  dashboardAlerts.innerHTML=alerts.map(a=>`<div class="item">${a}</div>`).join('') || '<div class="item">Tudo certo. Sem alertas principais.</div>';
 }
-function saveFoto(){
+async function compressImageForStorage(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onerror=()=>reject(new Error('Não foi possível ler a foto'));
+  reader.onload=()=>{
+   const img=new Image();
+   img.onerror=()=>reject(new Error('Formato de foto não suportado'));
+   img.onload=()=>{
+    const maxSide=1600;
+    let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+    const scale=Math.min(1,maxSide/Math.max(w,h));
+    w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
+    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d',{alpha:false});
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+    let quality=.82;
+    let data=canvas.toDataURL('image/jpeg',quality);
+    while(data.length>1400000 && quality>.48){quality-=.08;data=canvas.toDataURL('image/jpeg',quality)}
+    resolve(data);
+   };
+   img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+ });
+}
+async function saveFoto(){
  const file=fotoFile.files && fotoFile.files[0]; if(!file){toast('Escolha uma foto');return}
- if(file.size>2500000){toast('Foto muito grande. Tire print/recorte ou envie menor que 2,5 MB');return}
- const rd=new FileReader(); rd.onload=()=>{const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img:rd.result,ts:new Date().toISOString()}; fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field)}; rd.readAsDataURL(file);
+ try{
+  toast('Reduzindo foto…');
+  const img=await compressImageForStorage(file);
+  const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fotoField.value,date:fotoDate.value||today,obs:fotoObs.value,img,ts:new Date().toISOString()};
+  fotos.push(rec); fotoFile.value=''; fotoObs.value=''; saveStore(); refresh(); toast('Foto salva no talhão '+rec.field);
+ }catch(err){console.error(err);toast('Não foi possível salvar a foto. Tente outra imagem.')}
 }
 function deleteFoto(id){const p=prompt('Digite a senha 1234 para apagar esta foto:'); if(p!=='1234'){toast('Senha incorreta');return} fotos=fotos.filter(f=>f.id!==id); saveStore(); refresh(); toast('Foto apagada')}
 function buildFotos(){
@@ -350,21 +336,22 @@ if(document.getElementById('fotoField')) fotoField.onchange=()=>{selected=fotoFi
 if(document.getElementById('clearFotosBtn')) clearFotosBtn.onclick=()=>{const p=prompt('Digite a senha 1234 para apagar as fotos desta safra:'); if(p==='1234'&&confirm('Apagar fotos da safra ativa?')){fotos=fotos.filter(f=>f.safraId!==currentSafra); saveStore(); refresh(); toast('Fotos apagadas')}};
 if(document.getElementById('importKmlOpBtn')) importKmlOpBtn.onclick=importKmlOperacao;
 if(document.getElementById('setSafraBtn')) setSafraBtn.onclick=()=>setSafra(safraSelect.value);
+if(document.getElementById('syncNowBtn')) syncNowBtn.onclick=syncNow;
 
 dateInput.onchange=refresh;
-function goSection(id){
+function goSection(id, smooth=true){
  const el=document.getElementById(id); if(!el) return;
- // No celular, cada ícone abre uma página/aba separada. No computador continua navegando normal.
- document.querySelectorAll('.mapwrap,.right>.section-anchor').forEach(x=>x.classList.remove('active-page'));
- el.classList.add('active-page');
- if(window.innerWidth<=1050){ window.scrollTo({top:0,behavior:'smooth'}); }
- else { el.scrollIntoView({behavior:'smooth',block:'start'}); }
- if(id==='secMapa') setTimeout(()=>map.invalidateSize(),250);
+ const mobile=window.matchMedia('(max-width:1050px)').matches;
+ if(mobile){
+  document.querySelectorAll('#appRoot .active-page').forEach(x=>x.classList.remove('active-page'));
+  el.classList.add('active-page');
+  window.scrollTo({top:0,behavior:smooth?'smooth':'auto'});
+ }else{
+  el.scrollIntoView({behavior:smooth?'smooth':'auto',block:'start'});
+ }
+ if(id==='secMapa') setTimeout(()=>map.invalidateSize(),300);
+ if(id==='secGraficos') setTimeout(drawCharts,150);
  document.querySelectorAll('.mobile-nav button').forEach(b=>b.classList.toggle('active',b.dataset.target===id));
- document.querySelectorAll('.nav button').forEach((b,i)=>{
-   const ids=['secDashboard','secLancamento','secFicha','secPlantio','secOperacoes','secProducao','secRelatorios','secGraficos','secSafras'];
-   b.classList.toggle('active',(ids[i]||'secMapa')===id);
- });
 }
 document.querySelectorAll('.mobile-nav button').forEach(b=>b.onclick=()=>goSection(b.dataset.target));
 document.querySelectorAll('.nav button').forEach((b,i)=>{
@@ -377,11 +364,14 @@ fillSafraSelect();
 updateHarvestPreview();
 selectField('Sede',false);
 setupSync();
+goSection('secMapa',false);
+window.addEventListener('resize',()=>{
+ if(window.matchMedia('(max-width:1050px)').matches && !document.querySelector('#appRoot .active-page')) goSection('secMapa',false);
+ if(typeof map!=='undefined') setTimeout(()=>map.invalidateSize(),150);
+});
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=257').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=2513').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}
-
-setTimeout(()=>goSection('secMapa'),80);
