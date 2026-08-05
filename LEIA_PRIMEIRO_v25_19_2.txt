@@ -1,0 +1,15 @@
+GMV Gestão v25.19.2 — RESTAURAÇÃO COMPLETA
+
+Esta versão restaura e mescla o backup enviado pelo usuário:
+- 5 operações de adubação
+- 1 foto do talhão 1A
+
+A foto é sincronizada em documento separado no Firestore para evitar o limite do documento principal.
+Nenhum dado existente é apagado durante a restauração.
+
+PUBLICAÇÃO:
+1. Apague/substitua todos os arquivos antigos do repositório pelos arquivos deste pacote.
+2. Aguarde o GitHub Pages atualizar.
+3. No PC pressione Ctrl+F5.
+4. Abra primeiro no iPhone e toque em Sincronizar.
+5. Depois abra no PC e toque em Sincronizar.
