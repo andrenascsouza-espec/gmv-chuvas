@@ -76,7 +76,31 @@ canvas{display:block;width:100%;min-height:150px;}
   .right>.section-anchor::before{background-size:min(96%,360px) auto;opacity:.16;}
 }
 @media print{.right>.section-anchor::before{opacity:.08;filter:grayscale(1);}}
-</style></head><body>
+</style>
+<style>
+body{
+background:#f5f6f2;
+}
+body::before{
+content:"";
+position:fixed;inset:0;
+background:url('logo-gmv-watermark.png') center center/70% no-repeat;
+opacity:.18;
+pointer-events:none;
+z-index:0;
+}
+header,.topbar{
+background:#1f5d37!important;
+color:#fff!important;
+}
+.card,.painel,.panel,.dashboard-card{
+background:rgba(255,255,255,.96)!important;
+border-radius:16px!important;
+box-shadow:0 6px 18px rgba(0,0,0,.12)!important;
+}
+main,.container,#app{position:relative;z-index:1;}
+</style>
+</head><body>
 <div class="app page-mode" id="appRoot">
  <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=2515" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v25.15 • Logo dourada reforçada</b><br>Chuvas + Plantio + Produção + Fotos com sincronização automática.<br><span id="syncStatusSide">Modo local</span></div></aside>
  <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar/puxar dados da nuvem">🔄 Sincronizar</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
