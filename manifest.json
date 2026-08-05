@@ -1,6 +1,6 @@
 {
-  "name": "GMV Gestão Rural v25.15",
-  "short_name": "GMV v25.15",
+  "name": "GMV Gestão Rural v26.0",
+  "short_name": "GMV Gestão",
   "start_url": "./index.html?v=2515",
   "scope": "./",
   "display": "standalone",
