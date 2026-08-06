@@ -1,0 +1,7 @@
+GMV Gestão v26.2
+
+Acesso inicial:
+Usuário: admin
+Senha: 1234
+
+Somente o administrador pode alterar senhas, cadastrar, bloquear ou excluir usuários. Operadores acessam Plantio e Operações. Mantidos backup automático 09h/18h e backup manual.
