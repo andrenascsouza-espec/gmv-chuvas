@@ -1,0 +1,11 @@
+GMV Gestão v27.5
+
+Melhorias desta versão:
+- Pulverização permite até 10 produtos na mesma aplicação.
+- Cada produto tem nome, dose e unidade.
+- Relatório operacional com filtros Hoje, Semana, Mês, Safra e Período.
+- Relatório reúne chuva, plantio, operações e produção.
+- Mantida a base estável com Plantio e Operações separados.
+
+Publique todos os arquivos diretamente na raiz do repositório GitHub.
+Abra o site com ?v=275 para evitar cache antigo.
