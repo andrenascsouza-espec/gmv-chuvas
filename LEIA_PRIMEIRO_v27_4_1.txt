@@ -1,0 +1,7 @@
+GMV Gestão v27.4.1
+
+Base: v27.4 estável.
+Única alteração: na operação Pulverização aparece o campo Tipo da aplicação com Dessecação, Fungicida, Herbicida, Inseticida e Outros.
+
+Envie todos os arquivos extraídos diretamente para a raiz do repositório GitHub, substituindo os antigos.
+Depois abra o site com ?v=2741 no final do endereço.
