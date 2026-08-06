@@ -1,0 +1,17 @@
+GMV GESTÃO v27.0 — MENU E PERMISSÕES INDIVIDUAIS
+
+Primeiro acesso:
+Usuário: admin
+Senha: 1234
+
+NOVO:
+- Botão ☰ abre o menu completo no celular e computador.
+- Barra inferior reduzida para 5 funções principais.
+- Menu Usuários e permissões exclusivo do administrador.
+- Cadastro, bloqueio, exclusão e redefinição de senha de funcionários.
+- Permissões individuais: Ver, Lançar, Editar e Excluir.
+- Perfis rápidos: Operador, Encarregado e Somente consulta.
+- Backup e sincronização anteriores mantidos.
+
+PUBLICAÇÃO NO GITHUB:
+Extraia o ZIP e envie TODOS os arquivos diretamente para a raiz do repositório, substituindo os antigos. Não envie a pasta fechada. Depois abra o site com ?v=270 para evitar cache antigo.
