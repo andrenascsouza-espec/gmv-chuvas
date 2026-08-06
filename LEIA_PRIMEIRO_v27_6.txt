@@ -1,0 +1,3 @@
+GMV Gestão v27.6
+
+Navegação corrigida. Use ?v=276 após publicar no GitHub Pages.

@@ -1,3 +1,3 @@
-# GMV Gestão v27.5
+# GMV Gestão v27.6
 
-Pulverização com vários produtos e relatório operacional da safra.
+Versão com navegação corrigida e numeração consolidada.
