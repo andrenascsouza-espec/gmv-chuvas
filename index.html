@@ -7,7 +7,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="firebase-config.js?v=2520"></script>
+<script src="firebase-config.js?v=260"></script>
 <script>
 // Fallback da configuração Firebase para garantir sincronização mesmo se firebase-config.js não carregar
 window.GMV_FIREBASE_CONFIG = window.GMV_FIREBASE_CONFIG || {
@@ -78,10 +78,11 @@ canvas{display:block;width:100%;min-height:150px;}
 @media print{.right>.section-anchor::before{opacity:.08;filter:grayscale(1);}}
 </style></head><body>
 <div class="app page-mode" id="appRoot">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=2515" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v26.0 • Backup inteligente</b><br>Salva no aparelho e faz backup às 09:00 e 18:00.<br><span id="syncStatusSide">Modo local</span></div></aside>
- <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar e receber dados agora">☁️ Fazer backup agora</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=260" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active">🏠 Dashboard</button><button>🌧️ Lançar chuva</button><button>🗺️ Talhões</button><button>🌱 Plantio</button><button>🚜 Operações</button><button>⚖️ Produção</button><button>📊 Relatórios</button><button>📈 Gráficos</button><button>⚙️ Configurações</button></div><div class="status"><b>Sistema v26.0 • Backup inteligente</b><br>Salva no aparelho e faz backup às 09:00, 18:00 ou manualmente.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <main class="card mapwrap section-anchor" id="secMapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar e receber novidades agora">☁️ Fazer backup agora</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard"><h2>Dashboard da safra</h2><p class="small">Visão geral automática da Fazenda Matão. Atualiza conforme você lança chuva, plantio, operação e produção.</p><div class="grid2" id="dashboardCards"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
+  <div class="card panel section-anchor" id="secBackup"><h2>Backup e sincronização</h2><p class="small">Os dados ficam salvos neste aparelho. O envio para a nuvem ocorre às 09:00, às 18:00, quando a internet volta ou pelo botão manual.</p><div class="grid2"><div class="item"><b>Último backup</b><div id="lastBackupInfo">Ainda não realizado</div></div><div class="item"><b>Pendentes</b><div><span id="pendingBackupInfo">0</span> registros</div></div><div class="item"><b>Internet</b><div id="internetBackupInfo">Verificando</div></div><div class="item"><b>Próximo horário</b><div id="nextBackupInfo">--</div></div></div><div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px"><button class="primary" onclick="syncNow()">☁️ Fazer backup agora</button><button class="secondary" id="downloadSecurityBackupBtn">💾 Baixar arquivo de segurança</button></div></div>
   <div class="card panel section-anchor" id="secLancamento"><h2 id="selectedTitle">Lançar chuva</h2><div class="grid2"><div><label>Talhão</label><select id="fieldSelect"></select></div><div><label>Data</label><input id="dateInput" type="date"></div></div><div class="grid2" style="margin-top:10px"><div><label>Chuva (mm)</label><input id="mmInput" type="number" step="0.1" min="0" placeholder="Ex: 18"></div><div><label>Responsável</label><select id="respInput"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="obsInput" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="saveBtn">Salvar chuva</button><button class="secondary" id="clearBtn">Limpar dados</button></div></div>
 
   <div class="card panel section-anchor" id="secPlantio"><h2>Plantio e previsão de colheita</h2><div class="grid2"><div><label>Talhão</label><select id="plantField"></select></div><div><label>Cultura</label><select id="plantCulture"><option>Soja</option><option>Milho</option><option>Gergelim</option><option>Braquiária</option><option>Outro</option></select></div></div><div class="grid2" style="margin-top:10px"><div><label>Cultivar / variedade</label><input id="plantCultivar" placeholder="Ex: Olimpo, Lenda, Dagma"></div><div><label>Área (ha)</label><input id="plantArea" type="number" step="0.01" placeholder="Ex: 120"><div id="plantAreaHint" class="field-area-note"></div></div></div><div class="grid2" style="margin-top:10px"><div><label>Data do plantio</label><input id="plantDate" type="date"></div><div><label>Ciclo até colheita (dias)</label><input id="plantCycle" type="number" min="1" value="120"></div></div><div class="grid2" style="margin-top:10px"><div><label>População</label><input id="plantPop" placeholder="Ex: 280 mil/ha"></div><div><label>Espaçamento</label><input id="plantSpacing" placeholder="Ex: 0,45 m"></div></div><div class="grid2" style="margin-top:10px"><div><label>Responsável</label><select id="plantResp"><option>André</option><option>Max</option><option>Yarison</option><option>Luiz</option><option>Nelson</option><option>Bruno</option><option>Breno</option></select></div><div><label>Previsão de colheita</label><input id="harvestPreview" readonly></div></div><div style="margin-top:10px"><label>Observação</label><textarea id="plantObs" rows="2" placeholder="Opcional"></textarea></div><div style="display:flex;gap:10px;margin-top:12px"><button class="primary" id="savePlantBtn">Salvar plantio</button><button class="secondary" id="clearPlantBtn">Limpar plantios</button></div><h3>Plantios salvos</h3><div class="list" id="plantList"></div></div>
@@ -136,50 +137,49 @@ ensureSafraIds();
 let selected=FIELDS[0].name; let layers={};
 const today=new Date().toISOString().slice(0,10); dateInput.value=today;
 
-let db=null, syncRoot=null, syncBusy=false;
+let db=null, syncDoc=null, photoCollection=null, syncBusy=false, remoteReady=false, applyingRemote=false;
 const dirtyKey='gmv_backup_dirty_v26';
-const lastBackupKey='gmv_last_backup_v26';
-const sentStateKey='gmv_sent_state_v26';
-const scheduledRunKey='gmv_scheduled_runs_v26';
-const SYNC_TYPES={records:'record',plantios:'plantio',operacoes:'operacao',producoes:'producao',fotos:'foto',safras:'safra'};
+const localUpdatedKey='gmv_backup_local_updated_v26';
+const lastBackupKey='gmv_backup_last_success_v26';
+const sentPhotosKey='gmv_backup_sent_photos_v26';
+const scheduledSlotsKey='gmv_backup_slots_v26';
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
-function markDirty(){localStorage.setItem(dirtyKey,'1');updateBackupStatus()}
-function markClean(){localStorage.removeItem(dirtyKey);updateBackupStatus()}
-function pendingCount(){return records.length+plantios.length+operacoes.length+producoes.length+fotos.length}
-function cleanForFirestore(value){
- if(Array.isArray(value))return value.map(cleanForFirestore);
- if(value&&typeof value==='object'){const out={};Object.entries(value).forEach(([k,v])=>{if(v!==undefined)out[k]=cleanForFirestore(v)});return out}
- return value;
+function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString());updateBackupPanel()}
+function markClean(){localStorage.removeItem(dirtyKey);updateBackupPanel()}
+function pendingCount(){return pendingSync()?(records.length+plantios.length+operacoes.length+producoes.length+fotos.length):0}
+function cloudPayload(){return {records,plantios,operacoes,producoes,safras,updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString(),backupMode:'manual-scheduled-v26'}}
+function photoDocId(f){return String(f.id||f.ts||('foto_'+f.date+'_'+f.field)).replace(/[^a-zA-Z0-9_-]/g,'_')}
+function getSentPhotos(){try{return new Set(JSON.parse(localStorage.getItem(sentPhotosKey)||'[]'))}catch(e){return new Set()}}
+function saveSentPhotos(set){localStorage.setItem(sentPhotosKey,JSON.stringify(Array.from(set)))}
+async function uploadPendingPhotos(){
+ if(!photoCollection||!navigator.onLine||!fotos.length)return 0;
+ const sentIds=getSentPhotos();let sent=0;
+ for(const f of fotos){
+  if(!f||!f.img)continue;
+  const id=photoDocId(f);if(sentIds.has(id))continue;
+  await photoCollection.doc(id).set({...f,updatedAt:f.ts||new Date().toISOString()},{merge:true});
+  sentIds.add(id);sent++;
+ }
+ saveSentPhotos(sentIds);return sent;
 }
-function localCollections(){return {records,plantios,operacoes,producoes,fotos,safras}}
-function safeDocId(item,type){return String(item.id||item.ts||[type,item.date,item.field,'registro'].join('_')).replaceAll('/','_').slice(0,220)}
-function itemFingerprint(item){
- const text=JSON.stringify(item,Object.keys(item||{}).sort());let h=2166136261;
- for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}
- return (h>>>0).toString(36);
-}
-function getSentState(){try{return JSON.parse(localStorage.getItem(sentStateKey)||'{}')}catch(e){return {}}}
-function saveSentState(x){localStorage.setItem(sentStateKey,JSON.stringify(x))}
-function countPendingItems(){
- const sent=getSentState();let n=0;
- Object.entries(localCollections()).forEach(([name,arr])=>{(arr||[]).forEach(item=>{const id=safeDocId(item,name);if(!sent[name]||sent[name][id]!==itemFingerprint(item))n++})});
- return n;
-}
-function fmtDateTime(iso){if(!iso)return 'Ainda não realizado';try{return new Date(iso).toLocaleString('pt-BR')}catch(e){return iso}}
-function updateBackupStatus(msg){
- const last=localStorage.getItem(lastBackupKey);const pending=countPendingItems();
- const text=msg||('Último backup: '+fmtDateTime(last)+' • Pendentes: '+pending);
- const a=document.getElementById('syncStatus');if(a)a.textContent=(navigator.onLine?'🟢 ':'🟡 ')+text;
- const b=document.getElementById('syncStatusSide');if(b)b.textContent=(navigator.onLine?'Internet conectada. ':'Sem internet. ')+text;
-}
-function setSync(ok,msg){
- const a=document.getElementById('syncStatus');if(a)a.textContent=(ok?'🟢 ':'🔴 ')+(msg||'');
- const b=document.getElementById('syncStatusSide');if(b)b.textContent=msg||'';
+async function loadRemotePhotos(){
+ if(!photoCollection)return 0;
+ const snap=await photoCollection.get();const remote=[];snap.forEach(d=>remote.push(d.data()));
+ if(remote.length){applyingRemote=true;try{fotos=mergeArrays(fotos,normalizeList(remote,'foto'));saveStore(false);refresh()}finally{applyingRemote=false}}
+ return remote.length;
 }
 function saveStore(upload=true){
  localStorage.setItem(storeKey,JSON.stringify(records));localStorage.setItem(plantKey,JSON.stringify(plantios));localStorage.setItem(opKey,JSON.stringify(operacoes));localStorage.setItem(prodKey,JSON.stringify(producoes));localStorage.setItem(fotoKey,JSON.stringify(fotos));localStorage.setItem(safraKey,JSON.stringify(safras));localStorage.setItem('gmv_safra_atual',currentSafra);
- if(upload)markDirty();else updateBackupStatus();
+ if(upload&&!applyingRemote){markDirty();setSync(false,navigator.onLine?'Pendente para backup':'Offline — dados salvos no aparelho')}
 }
+function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Backup concluído');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🟠 '+(msg||'Backup pendente');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?(msg||'Backup concluído'):(msg||'Dados salvos neste aparelho');updateBackupPanel()}
+function updateBackupPanel(){
+ const last=localStorage.getItem(lastBackupKey);const el=document.getElementById('lastBackupInfo');if(el)el.textContent=last?new Date(last).toLocaleString('pt-BR'):'Ainda não realizado';
+ const pe=document.getElementById('pendingBackupInfo');if(pe)pe.textContent=pendingSync()?String(records.length+plantios.length+operacoes.length+producoes.length+fotos.length):'0';
+ const ie=document.getElementById('internetBackupInfo');if(ie)ie.textContent=navigator.onLine?'Conectado':'Sem internet';
+ const ne=document.getElementById('nextBackupInfo');if(ne)ne.textContent=nextScheduledText();
+}
+function nextScheduledText(){const now=new Date();for(const h of [9,18]){const d=new Date(now);d.setHours(h,0,0,0);if(d>now)return d.toLocaleString('pt-BR')}const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(9,0,0,0);return d.toLocaleString('pt-BR')}
 function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''))}
 function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0}
 function mergeArrays(localArr,remoteArr){const map=new Map();[...(Array.isArray(remoteArr)?remoteArr:[]),...(Array.isArray(localArr)?localArr:[])].forEach(item=>{if(!item)return;const k=syncArrayKey(item),old=map.get(k);if(!old||syncTime(item)>=syncTime(old))map.set(k,item)});return Array.from(map.values())}
@@ -190,79 +190,36 @@ function normalizeItem(x,type){
  if(type==='plantio'){y.culture=y.culture||y.cultura||'';y.cultivar=y.cultivar||y.variedade||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.harvest=y.harvest||y.colheita||y.previsaoColheita||''}
  if(type==='operacao'){y.op=y.op||y.operacao||y.operação||'';y.area=Number(y.area??y.areaHa??y.hectares??0);y.maquina=y.maquina||y.máquina||''}
  if(type==='producao'){y.culture=y.culture||y.cultura||'';y.pesoKg=Number(y.pesoKg??y.peso??y.kg??0);y.sacaKg=Number(y.sacaKg||60);y.placa=y.placa||y.caminhao||y.caminhão||''}
- y.id=y.id||y.ts||[type,y.date,y.field,Math.random().toString(36).slice(2,8)].join('_');y.ts=y.ts||y.updatedAt||(y.date?y.date+'T12:00:00.000Z':new Date().toISOString());if(type!=='safra'){if(!y.safraId)y.safraId=currentSafra;if(!y.safraName)y.safraName=(safras.find(s=>s.id===y.safraId)||activeSafra()).name}return y
+ y.id=y.id||y.ts||[type,y.date,y.field,Math.random().toString(36).slice(2,8)].join('_');y.ts=y.ts||y.updatedAt||(y.date?y.date+'T12:00:00.000Z':new Date().toISOString());if(!y.safraId)y.safraId=currentSafra;if(!y.safraName)y.safraName=(safras.find(s=>s.id===y.safraId)||activeSafra()).name;return y
 }
 function normalizeList(arr,type){return (Array.isArray(arr)?arr:[]).map(x=>normalizeItem(x,type)).filter(Boolean)}
-function applyRemoteCollection(name,items){
- if(name==='records')records=mergeArrays(records,normalizeList(items,'record'));
- if(name==='plantios')plantios=mergeArrays(plantios,normalizeList(items,'plantio'));
- if(name==='operacoes')operacoes=mergeArrays(operacoes,normalizeList(items,'operacao'));
- if(name==='producoes')producoes=mergeArrays(producoes,normalizeList(items,'producao'));
- if(name==='fotos')fotos=mergeArrays(fotos,normalizeList(items,'foto'));
- if(name==='safras'&&items.length)safras=mergeArrays(safras,items);
- ensureSafraIds();fillSafraSelect();saveStore(false);refresh();
+function applyRemoteData(data){
+ records=mergeArrays(records,normalizeList(data.records||data.dados||data.chuvas,'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||data.plantio,'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||data.operacao||data['operações'],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||data.producao||data.colheitas,'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos,'foto'));if(Array.isArray(data.safras)&&data.safras.length)safras=mergeArrays(safras,data.safras);ensureSafraIds();fillSafraSelect();saveStore(false);refresh()
 }
 async function restoreBundledBackup(){
- if(localStorage.getItem('gmv_backup_restaurado_v25192')==='1')return false;
- try{
-  const r=await fetch('backup_restauracao_soja_26_27.json?v=2600',{cache:'no-store'});if(!r.ok)throw new Error('backup não encontrado');const data=await r.json();
-  if(data.safra){const s=data.safra;if(!safras.some(x=>x.id===s.id))safras.push(s);currentSafra=s.id||currentSafra}
-  records=mergeArrays(records,normalizeList(data.records||[],'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||[],'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||[],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||[],'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos||[],'foto'));
-  ensureSafraIds();fillSafraSelect();saveStore(false);refresh();localStorage.setItem('gmv_backup_restaurado_v25192','1');markDirty();toast('Backup recuperado com sucesso');return true;
- }catch(e){console.warn('Backup automático não restaurado:',e);return false}
+ if(localStorage.getItem('gmv_backup_restaurado_v25192')==='1')return {restored:false,counts:null};
+ try{const r=await fetch('backup_restauracao_soja_26_27.json?v=260',{cache:'no-store'});if(!r.ok)throw new Error('backup não encontrado');const data=await r.json();if(data.safra){const s=data.safra;if(!safras.some(x=>x.id===s.id))safras.push(s);currentSafra=s.id||currentSafra}records=mergeArrays(records,normalizeList(data.records||[],'record'));plantios=mergeArrays(plantios,normalizeList(data.plantios||[],'plantio'));operacoes=mergeArrays(operacoes,normalizeList(data.operacoes||[],'operacao'));producoes=mergeArrays(producoes,normalizeList(data.producoes||[],'producao'));fotos=mergeArrays(fotos,normalizeList(data.fotos||[],'foto'));ensureSafraIds();fillSafraSelect();saveStore(false);refresh();localStorage.setItem('gmv_backup_restaurado_v25192','1');markDirty();return {restored:true}}
+ catch(e){console.warn('Backup automático não restaurado:',e);return {restored:false}}
 }
-async function initCloud(){
- if(syncRoot)return true;
- const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_'))throw new Error('Firebase não configurado');if(typeof firebase==='undefined')throw new Error('Firebase não carregou');
- if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();
- try{await db.enablePersistence({synchronizeTabs:true})}catch(e){}
- syncRoot=db.collection('fazendas').doc('matao').collection('gmv_backup').doc('principal');return true;
+async function initBackupConnection(){
+ if(remoteReady)return true;
+ const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_'))throw new Error('Firebase não configurado');if(typeof firebase==='undefined')throw new Error('Firebase não carregou');if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');photoCollection=syncDoc.collection('fotos');remoteReady=true;return true
 }
-async function readRemoteCollections(){
- const result={};for(const name of Object.keys(SYNC_TYPES)){const snap=await syncRoot.collection(name).get();result[name]=snap.docs.map(d=>d.data())}return result;
-}
-async function uploadOnlyPending(){
- const sent=getSentState();let uploaded=0,failed=0;
- for(const [name,arr] of Object.entries(localCollections())){
-  sent[name]=sent[name]||{};const col=syncRoot.collection(name);
-  for(const item of (arr||[])){
-   const id=safeDocId(item,name),fp=itemFingerprint(item);if(sent[name][id]===fp)continue;
-   try{await col.doc(id).set(cleanForFirestore(item),{merge:true});sent[name][id]=fp;uploaded++;saveSentState(sent)}catch(e){failed++;console.error('Falha no item '+name+'/'+id,e)}
-  }
- }
- return {uploaded,failed};
-}
-async function runBackup(reason='manual'){
- if(syncBusy)return;if(!navigator.onLine){updateBackupStatus('Sem internet — dados continuam salvos no aparelho');if(reason==='manual')toast('Sem internet. Backup ficou pendente.');return}
+async function performBackup(manual=false){
+ if(syncBusy)return false;if(!navigator.onLine){setSync(false,'Sem internet — backup ficou pendente');if(manual)toast('Sem internet. Os dados continuam salvos no aparelho.');return false}
  syncBusy=true;setSync(false,'Fazendo backup...');
- try{
-  await initCloud();
-  let remote=await readRemoteCollections();let receivedBefore=records.length+plantios.length+operacoes.length+producoes.length+fotos.length;
-  Object.entries(remote).forEach(([name,items])=>applyRemoteCollection(name,items));
-  let receivedAfter=records.length+plantios.length+operacoes.length+producoes.length+fotos.length;
-  const result=await uploadOnlyPending();
-  const now=new Date().toISOString();await syncRoot.collection('meta').doc('estado').set({lastBackup:now,reason,version:'26.0-agendado'},{merge:true});
-  localStorage.setItem(lastBackupKey,now);if(result.failed===0)markClean();
-  const received=Math.max(0,receivedAfter-receivedBefore);setSync(result.failed===0,'Backup concluído • enviados: '+result.uploaded+' • recebidos: '+received+' • pendentes: '+countPendingItems());
-  if(reason==='manual')toast(result.failed===0?'Backup concluído':'Backup parcial; alguns itens ficaram pendentes');
- }catch(err){console.error('Falha no backup:',err);setSync(false,'Dados salvos no aparelho — backup não concluído');if(reason==='manual')toast('Não foi possível concluir o backup')}
- finally{syncBusy=false;updateBackupStatus()}
+ try{await initBackupConnection();await restoreBundledBackup();const snap=await syncDoc.get({source:'server'});if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}const receivedPhotos=await loadRemotePhotos();let sentMain=0;if(pendingSync()){await syncDoc.set(cloudPayload(),{merge:true});sentMain=1}const sentPhotos=await uploadPendingPhotos();markClean();const now=new Date().toISOString();localStorage.setItem(lastBackupKey,now);setSync(true,'Backup concluído');updateBackupPanel();if(manual)toast('Backup concluído: '+sentPhotos+' foto(s) enviada(s), '+receivedPhotos+' recebida(s)');return true}
+ catch(err){console.error('Falha no backup:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Backup não concluído — dados preservados no aparelho');if(manual)toast('Não foi possível concluir o backup agora');return false}
+ finally{syncBusy=false}
 }
-function syncNow(){runBackup('manual')}
-function scheduledSlotsForToday(){
- const d=new Date(),date=d.toISOString().slice(0,10);return [{id:date+'-09',hour:9},{id:date+'-18',hour:18}];
+function scheduledSlotKey(date,hour){return date.toISOString().slice(0,10)+'_'+hour}
+function getCompletedSlots(){try{return JSON.parse(localStorage.getItem(scheduledSlotsKey)||'{}')}catch(e){return {}}}
+function markSlotDone(key){const x=getCompletedSlots();x[key]=true;localStorage.setItem(scheduledSlotsKey,JSON.stringify(x))}
+async function checkScheduledBackup(){
+ const now=new Date();const h=now.getHours();const m=now.getMinutes();if(![9,18].includes(h)||m>15)return;const key=scheduledSlotKey(now,h);const done=getCompletedSlots();if(done[key])return;if(!navigator.onLine)return;const ok=await performBackup(false);if(ok)markSlotDone(key)
 }
-function getScheduledRuns(){try{return JSON.parse(localStorage.getItem(scheduledRunKey)||'{}')}catch(e){return {}}}
-function checkScheduledBackup(){
- if(!navigator.onLine)return;const now=new Date(),runs=getScheduledRuns();
- for(const slot of scheduledSlotsForToday()){
-  if(now.getHours()>=slot.hour&&!runs[slot.id]){runs[slot.id]=new Date().toISOString();localStorage.setItem(scheduledRunKey,JSON.stringify(runs));runBackup('automatico-'+slot.hour+'h');break}
- }
-}
-window.addEventListener('online',()=>{updateBackupStatus('Internet voltou — verificando backup pendente');setTimeout(()=>{if(pendingSync()||countPendingItems()>0)runBackup('retorno-internet');else checkScheduledBackup()},1200)});
-window.addEventListener('offline',()=>updateBackupStatus('Sem internet — dados salvos no aparelho'));
-setInterval(checkScheduledBackup,60000);
-setTimeout(async()=>{await restoreBundledBackup();updateBackupStatus();checkScheduledBackup()},1200);
+function setupBackupSystem(){restoreBundledBackup().finally(()=>{updateBackupPanel();setSync(false,pendingSync()?'Pendente para backup':'Dados salvos no aparelho')});setInterval(checkScheduledBackup,30000);checkScheduledBackup();window.addEventListener('online',()=>{updateBackupPanel();if(pendingSync())performBackup(false)});window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')})}
+function syncNow(){performBackup(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
 function scopedOperacoes(){return operacoes.filter(o=>o.safraId===currentSafra)}
@@ -308,6 +265,7 @@ fitBtn.onclick=()=>map.fitBounds(group.getBounds(),{padding:[20,20]});
 saveBtn.onclick=()=>{const mm=parseFloat(mmInput.value); if(!mm && mm!==0){toast('Digite a chuva em mm');return} records.push({id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:fieldSelect.value,date:dateInput.value||today,mm,resp:respInput.value,obs:obsInput.value,ts:new Date().toISOString()}); saveStore(); mmInput.value=''; obsInput.value=''; selectField(fieldSelect.value,false); toast('Chuva salva para '+fieldSelect.value)};
 clearBtn.onclick=()=>{const __p=prompt('Digite a senha (1234) para apagar os dados:'); if(__p==='1234' && confirm('Apagar somente as chuvas da safra '+activeSafra().name+'?')){records=records.filter(r=>r.safraId!==currentSafra);saveStore();refresh();toast('Chuvas da safra apagadas')}};
 backupBtn.onclick=()=>download('backup_gmv_v25_'+activeSafra().name.replaceAll(' ','_')+'.json',JSON.stringify({version:25,safra:activeSafra(),records:scopedRecords(),plantios:scopedPlantios(),operacoes:scopedOperacoes(),producoes:scopedProducoes(),fotos:scopedFotos(),safras,currentSafra},null,2),'application/json');
+if(document.getElementById('downloadSecurityBackupBtn')) downloadSecurityBackupBtn.onclick=()=>backupBtn.click();
 importBtn.onclick=()=>{const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json'; inp.onchange=()=>{const file=inp.files[0]; if(!file)return; const rd=new FileReader(); rd.onload=()=>{try{const data=JSON.parse(rd.result); if(Array.isArray(data)){records=records.filter(r=>r.safraId!==currentSafra).concat(data.map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()})));}else{if(Array.isArray(data.safras)) safras=data.safras; records=records.filter(r=>r.safraId!==currentSafra).concat((data.records||[]).map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()}))); plantios=plantios.filter(r=>r.safraId!==currentSafra).concat((data.plantios||[]).map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()}))); operacoes=operacoes.filter(r=>r.safraId!==currentSafra).concat((data.operacoes||[]).map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()}))); producoes=producoes.filter(r=>r.safraId!==currentSafra).concat((data.producoes||[]).map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()}))); fotos=fotos.filter(r=>r.safraId!==currentSafra).concat((data.fotos||[]).map(x=>({...x,safraId:currentSafra,safraName:activeSafra().name,id:x.id||Date.now()+Math.random()})));} saveStore(); fillSafraSelect(); refresh(); toast('Backup completo importado');}catch(e){toast('Não consegui importar esse arquivo')}}; rd.readAsText(file)}; inp.click()};
 printBtn.onclick=()=>window.print();
 csvBtn.onclick=()=>{let csv='TIPO;data;talhao;mm/cultura;responsavel;observacao\n'+scopedRecords().map(r=>['CHUVA',r.date,r.field,r.mm,r.resp,(r.obs||'').replaceAll(';',',')].join(';')).join('\n')+'\n'+scopedPlantios().map(p=>['PLANTIO',p.date,p.field,p.culture+' '+(p.cultivar||''),'colheita '+p.harvest,(p.obs||'').replaceAll(';',',')].join(';')).join('\n')+'\n'+scopedOperacoes().map(o=>['OPERACAO',o.date,o.field,o.op,o.area+' ha',o.resp,(o.obs||'').replaceAll(';',',')].join(';')).join('\n')+'\n'+scopedProducoes().map(p=>['PRODUCAO',p.date,p.field,p.culture,p.pesoKg+' kg',kgToSacas(p.pesoKg,p.sacaKg).toFixed(2)+' sc',(p.obs||'').replaceAll(';',',')].join(';')).join('\n')+'\n'+scopedFotos().map(f=>['FOTO',f.date,f.field,'foto',f.resp||'',(f.obs||'').replaceAll(';',',')].join(';')).join('\n'); download('gmv_gestao.csv',csv,'text/csv')};
@@ -446,7 +404,7 @@ async function compressImageForStorage(file){
    const img=new Image();
    img.onerror=()=>reject(new Error('Formato de foto não suportado'));
    img.onload=()=>{
-    const maxSide=1100;
+    const maxSide=1600;
     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
     const scale=Math.min(1,maxSide/Math.max(w,h));
     w=Math.max(1,Math.round(w*scale)); h=Math.max(1,Math.round(h*scale));
@@ -455,7 +413,7 @@ async function compressImageForStorage(file){
     ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
     let quality=.82;
     let data=canvas.toDataURL('image/jpeg',quality);
-    while(data.length>680000 && quality>.38){quality-=.08;data=canvas.toDataURL('image/jpeg',quality)}
+    while(data.length>1400000 && quality>.48){quality-=.08;data=canvas.toDataURL('image/jpeg',quality)}
     resolve(data);
    };
    img.src=reader.result;
@@ -543,12 +501,12 @@ document.querySelectorAll('.nav button').forEach((b,i)=>{
  const ids=['secDashboard','secLancamento','secFicha','secPlantio','secOperacoes','secProducao','secRelatorios','secGraficos','secSafras'];
  b.onclick=()=>goSection(ids[i]||'secMapa');
 });
-window.deleteFoto=deleteFoto; window.openFieldReport=openFieldReport; window.deleteOperacao=deleteOperacao; window.editOperacao=editOperacao; window.deleteProducao=deleteProducao; window.editProducao=editProducao; window.setSafra=setSafra; window.deleteRecord=deleteRecord; window.editRecord=editRecord;
+window.syncNow=syncNow; window.deleteFoto=deleteFoto; window.openFieldReport=openFieldReport; window.deleteOperacao=deleteOperacao; window.editOperacao=editOperacao; window.deleteProducao=deleteProducao; window.editProducao=editProducao; window.setSafra=setSafra; window.deleteRecord=deleteRecord; window.editRecord=editRecord;
 function quickLaunch(n){selectField(n,false); goSection('secLancamento'); setTimeout(()=>document.getElementById('mmInput').focus(),350)}
 fillSafraSelect();
 updateHarvestPreview();
 selectField('Sede',false);
-setupSync();
+setupBackupSystem();
 goSection('secMapa',false);
 window.addEventListener('resize',()=>{
  if(window.matchMedia('(max-width:1050px)').matches && !document.querySelector('#appRoot .active-page')) goSection('secMapa',false);
@@ -556,7 +514,7 @@ window.addEventListener('resize',()=>{
 });
 if('serviceWorker' in navigator){
   navigator.serviceWorker.getRegistrations().then(regs=>regs.forEach(r=>r.unregister())).finally(()=>{
-    navigator.serviceWorker.register('sw.js?v=2520').catch(()=>{});
+    navigator.serviceWorker.register('sw.js?v=260').catch(()=>{});
   });
 }
 if(window.caches){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));}

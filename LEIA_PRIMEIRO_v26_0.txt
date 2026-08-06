@@ -1,19 +1,21 @@
-GMV GESTÃO v26.0 — BACKUP INTELIGENTE
+GMV GESTÃO v26.0 - BACKUP INTELIGENTE
 
-COMO FUNCIONA
-- Todos os lançamentos são salvos primeiro no próprio aparelho.
-- O sistema tenta fazer backup automático às 09:00 e às 18:00.
-- Se estiver sem internet, os dados continuam salvos e serão enviados quando a conexão voltar.
-- O botão “Fazer backup agora” envia e recebe as novidades manualmente.
-- O botão “Backup” continua gerando um arquivo JSON para guardar no computador ou telefone.
+O que mudou:
+- O sistema salva primeiro no aparelho, inclusive sem internet.
+- Não existe mais escuta em tempo real do Firestore.
+- Backup automático às 09:00 e às 18:00, desde que o GMV esteja aberto e haja internet.
+- Se a internet voltar e houver dados pendentes, o sistema tenta enviar automaticamente.
+- Botão "Fazer backup agora" para envio e recebimento manual.
+- Botão "Baixar arquivo de segurança" para gerar o backup JSON.
+- Apenas fotos ainda não enviadas são gravadas novamente na nuvem.
+- Banco vazio não apaga os dados locais.
 
-IMPORTANTE SOBRE IPHONE
-Um site não consegue acordar sozinho em horário exato quando está totalmente fechado. Por isso:
-- Se o GMV estiver aberto às 09:00 ou 18:00, o backup começa automaticamente.
-- Se estiver fechado, o sistema faz o backup atrasado quando for aberto novamente ou quando a internet voltar.
+IMPORTANTE NO IPHONE:
+O Safari não consegue abrir o site sozinho com ele totalmente fechado. Se o GMV estiver fechado às 09:00 ou 18:00, o backup pendente será tentado quando o app/site for aberto ou quando a conexão voltar.
 
-SEGURANÇA
-- Não há sincronização em tempo real.
-- Não há repetição contínua de gravações.
-- Somente registros novos ou alterados são enviados.
-- Dados vazios da nuvem não apagam os dados do aparelho.
+TESTE RECOMENDADO:
+1. Publique todos os arquivos no GitHub.
+2. Abra no iPhone e faça um lançamento de teste.
+3. Toque em "Fazer backup agora".
+4. Abra no PC, toque no mesmo botão e confira o lançamento.
+5. Baixe também um arquivo de segurança JSON.
