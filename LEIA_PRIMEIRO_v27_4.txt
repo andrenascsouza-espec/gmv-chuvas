@@ -1,0 +1,9 @@
+GMV Gestão v27.4 - Sincronização automática
+
+1. Envie TODOS os arquivos desta pasta para a raiz do GitHub.
+2. Substitua os arquivos antigos.
+3. Abra o site com ?v=274 no final.
+4. Faça um cadastro no computador e aguarde aparecer “Sincronizado agora”.
+5. Abra o telefone com internet. A alteração deve chegar automaticamente.
+
+Esta versão mantém backup manual e automático, mas também adiciona escuta em tempo real do Firestore.

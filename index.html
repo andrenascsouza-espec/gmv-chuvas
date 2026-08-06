@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v26.2 • Fazenda Matão</title>
+<title>GMV Gestão v27.4 • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=2519"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2519"><link rel="icon" type="image/png" href="favicon.png?v=2519"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -291,7 +291,55 @@ function markSlotDone(key){const x=getCompletedSlots();x[key]=true;localStorage.
 async function checkScheduledBackup(){
  const now=new Date();const h=now.getHours();const m=now.getMinutes();if(![9,18].includes(h)||m>15)return;const key=scheduledSlotKey(now,h);const done=getCompletedSlots();if(done[key])return;if(!navigator.onLine)return;const ok=await performBackup(false);if(ok)markSlotDone(key)
 }
-function setupBackupSystem(){restoreBundledBackup().finally(()=>{updateBackupPanel();setSync(false,pendingSync()?'Pendente para backup':'Dados salvos no aparelho')});setInterval(checkScheduledBackup,30000);checkScheduledBackup();window.addEventListener('online',()=>{updateBackupPanel();if(pendingSync())performBackup(false)});window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')})}
+let liveSyncUnsubscribe=null;
+async function startLiveSync(){
+ if(!navigator.onLine)return false;
+ try{
+  await initBackupConnection();
+  if(liveSyncUnsubscribe)return true;
+  liveSyncUnsubscribe=syncDoc.onSnapshot({includeMetadataChanges:false},snap=>{
+   if(!snap.exists)return;
+   applyingRemote=true;
+   try{
+    applyRemoteData(snap.data()||{});
+    setSync(true,'Sincronizado agora');
+    localStorage.setItem(lastBackupKey,new Date().toISOString());
+    updateBackupPanel();
+   }finally{applyingRemote=false}
+  },err=>{
+   console.error('Falha na sincronização em tempo real:',err);
+   liveSyncUnsubscribe=null;
+   setSync(false,'Sincronização interrompida');
+  });
+  return true;
+ }catch(e){
+  console.error('Não foi possível iniciar a sincronização:',e);
+  setSync(false,'Sem sincronização com a nuvem');
+  return false;
+ }
+}
+async function initialCloudSync(){
+ if(!navigator.onLine)return false;
+ try{
+  await initBackupConnection();
+  const snap=await syncDoc.get({source:'server'});
+  if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}
+  await loadRemotePhotos();
+  if(pendingSync())await performBackup(false);
+  else setSync(true,'Sincronizado');
+  return true;
+ }catch(e){console.error('Falha na sincronização inicial:',e);setSync(false,'Dados salvos neste aparelho');return false}
+}
+function setupBackupSystem(){
+ restoreBundledBackup().finally(async()=>{
+  updateBackupPanel();
+  if(navigator.onLine){await initialCloudSync();await startLiveSync()}
+  else setSync(false,'Offline — dados salvos no aparelho');
+ });
+ setInterval(checkScheduledBackup,30000);checkScheduledBackup();
+ window.addEventListener('online',async()=>{updateBackupPanel();await initialCloudSync();await startLiveSync()});
+ window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')})
+}
 function syncNow(){performBackup(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
