@@ -1,0 +1,9 @@
+GMV GESTÃO v27.3 — OPERAÇÕES POR FUNCIONÁRIO
+
+1. Envie todos os arquivos desta pasta para a raiz do repositório GitHub.
+2. Substitua os arquivos antigos e confirme o commit.
+3. Abra o sistema acrescentando ?v=273 ao final do endereço.
+4. Entre como administrador e abra Menu > Usuários e permissões.
+5. Escolha o funcionário e marque somente as operações permitidas.
+
+Exemplo: marque somente Plantio. O funcionário verá apenas Plantio dentro de Operações.

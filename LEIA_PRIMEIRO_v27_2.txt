@@ -1,0 +1,11 @@
+GMV GESTÃO v27.2 — PÁGINAS SEPARADAS POR FUNÇÃO
+
+1. Envie todos os arquivos desta pasta para a raiz do GitHub.
+2. Substitua os arquivos antigos, principalmente index.html e sw.js.
+3. Abra o endereço com ?v=272 no final.
+
+NOVO:
+- Plantio, Aplicação, Adubação, Escarificação e Grade são páginas separadas.
+- Em Usuários e permissões, libere somente a função de cada funcionário.
+- O funcionário entra direto na primeira página liberada e as demais ficam escondidas.
+- Os lançamentos continuam entrando no histórico geral de operações e no backup.
