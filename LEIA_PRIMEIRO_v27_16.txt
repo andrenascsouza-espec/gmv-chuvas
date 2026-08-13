@@ -1,0 +1,10 @@
+GMV Gestão v27.16 — Correção de exclusões no backup/sincronização
+
+Correção principal:
+- Itens apagados não voltam mais depois do backup ou sincronização.
+- Exclusões são registradas e sincronizadas com a nuvem.
+- Ao existir alteração local pendente, o sistema envia primeiro o estado atual antes de receber dados antigos da nuvem.
+- Correção aplicada a chuva, operações, produção e fotos, incluindo limpezas em lote.
+- Edição de lançamentos também marca a versão antiga como removida para não reaparecer.
+
+Base: v27.15 Responsável/Login Corrigido.
