@@ -1,0 +1,7 @@
+GMV Gestão v27.18
+
+Ajuste desta versão:
+- Hora inicial/final da pulverização agora são HORÍMETROS da máquina, não horário do relógio.
+- Aceita valores decimais, por exemplo 1250,4 e 1258,9.
+- Qtd. horas é calculada automaticamente pela diferença do horímetro final menos o inicial.
+- Mantido o modo offline completo da v27.17.

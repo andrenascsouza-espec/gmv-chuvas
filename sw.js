@@ -1,4 +1,4 @@
-// GMV Gestão v27.17 — funcionamento offline robusto
+// GMV Gestão v27.18 — funcionamento offline robusto
 const CACHE_VERSION = 'gmv-v27-17-offline';
 const APP_CACHE = `${CACHE_VERSION}-app`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
