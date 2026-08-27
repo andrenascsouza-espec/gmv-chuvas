@@ -1,0 +1,24 @@
+GMV GESTÃO v27.17 — OFFLINE COMPLETO
+
+ALTERAÇÕES DESTA VERSÃO
+- Corrigido o Service Worker que apagava o cache a cada ativação.
+- O app agora guarda os arquivos principais para reabrir sem internet.
+- Login continua usando os usuários já salvos no aparelho quando estiver offline.
+- Lançamentos continuam sendo salvos no localStorage e ficam pendentes para sincronização.
+- Quando a internet volta, o sistema mantém a sincronização/backup já existente.
+- Leaflet e Firebase passam a ser cacheados para uso offline após a instalação online.
+- Imagens de satélite já visualizadas podem ser reutilizadas offline (cache limitado).
+- Removida a rotina do index.html que desregistrava o Service Worker e apagava todos os caches.
+
+IMPORTANTE PARA O PRIMEIRO TESTE NO IPHONE
+1. Publique/substitua os arquivos pela v27.17.
+2. Abra o app COM internet pelo menos uma vez e deixe a tela carregar completamente.
+3. Feche o app.
+4. Desligue Wi-Fi e dados móveis.
+5. Abra novamente pelo ícone instalado na tela inicial.
+6. Faça um lançamento de teste offline.
+7. Ligue a internet e confira o backup/sincronização.
+
+OBSERVAÇÃO
+O desenho dos talhões está embutido no próprio index.html e abre offline.
+O fundo de satélite depende das imagens que já tiverem sido carregadas e guardadas no aparelho; áreas nunca visualizadas podem ficar sem imagem de fundo quando totalmente offline.
