@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>GMV Gestão v27.18 • Fazenda Matão</title>
+<title>GMV Gestão v27.18 Sync corrigida • Fazenda Matão</title>
 <link rel="manifest" href="manifest.json?v=2519"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=2519"><link rel="icon" type="image/png" href="favicon.png?v=2519"><meta name="theme-color" content="#050505"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="GMV Chuvas"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -109,7 +109,7 @@ canvas{display:block;width:100%;min-height:150px;}
 @media(max-width:560px){.permission-head,.permission-row{grid-template-columns:minmax(92px,1.45fr) repeat(4,minmax(42px,.6fr));font-size:11px;padding:8px 4px}.permission-row label{font-size:12px}.mobile-nav button{font-size:10px!important}.mobile-nav button span{font-size:20px!important}}
 </style></head><body><div class="login-screen" id="loginScreen"><div class="login-box"><img src="logo-gmv.jpeg?v=273" alt="GMV"><h2>Entrar no GMV Gestão</h2><p>Use seu usuário e senha</p><label>Usuário</label><input id="loginUser" autocomplete="username" placeholder="Digite seu ID"><label>Senha</label><input id="loginPass" type="password" autocomplete="current-password" placeholder="Senha"><button class="primary" id="loginBtn" style="width:100%;margin-top:14px">Entrar</button><div class="login-error" id="loginError"></div></div></div><div class="userbar" id="userBar"><span id="loggedUser"></span><button id="logoutBtn">Sair</button></div>
 <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">☰</button><div class="drawer-overlay" id="drawerOverlay"></div><aside class="app-drawer" id="appDrawer"><div class="drawer-head"><img src="logo-gmv.jpeg?v=273" alt="GMV"><div><b>GMV Gestão</b><small id="drawerUser">Não conectado</small></div></div><div class="drawer-nav" id="drawerNav"><button data-section="secDashboard" data-module="dashboard">🏠 Dashboard</button><button data-section="secMapa" data-module="mapa">🗺️ Mapa e talhões</button><button data-section="secLancamento" data-module="chuva">🌧️ Chuva</button><button data-section="secPlantio" data-module="plantio">🌱 Plantio</button><button data-section="secOperacoes" data-module="operacoes">🚜 Operações</button><button data-section="secProducao" data-module="producao">⚖️ Produção</button><button data-section="secRelatorios" data-module="relatorios">📄 Relatórios</button><button data-section="secGraficos" data-module="graficos">📈 Gráficos</button><button data-section="secSafras" data-module="safras">🌾 Safras</button><div class="drawer-sep"></div><button data-section="secUsuarios" data-module="usuarios" class="admin-only">👥 Usuários e permissões</button><button data-section="secBackup" data-module="backup">💾 Backup e sincronização</button><button id="drawerImportBtn" data-module="importar">📥 Importar dados</button><button id="drawerExportBtn" data-module="exportar">📤 Exportar / Excel</button><div class="drawer-sep"></div><button id="drawerLogoutBtn">🚪 Sair</button></div><div class="drawer-version">Versão 27.17 • Offline completo</div></aside><div class="app page-mode" id="appRoot">
- <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=260" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active" data-section="secDashboard">🏠 Dashboard</button><button data-section="secLancamento">🌧️ Lançar chuva</button><button data-section="secMapa">🗺️ Talhões</button><button data-section="secPlantio">🌱 Plantio</button><button data-section="secOperacoes">🚜 Operações</button><button data-section="secProducao">⚖️ Produção</button><button data-section="secRelatorios">📊 Relatórios</button><button data-section="secGraficos">📈 Gráficos</button><button data-section="secUsuarios">⚙️ Configurações</button></div><div class="status"><b>Sistema v27.18 • Offline completo</b><br>Salva no aparelho e faz backup às 09:00, 18:00 ou manualmente.<br><span id="syncStatusSide">Modo local</span></div></aside>
+ <aside class="card sidebar"><div class="brand"><img class="logo" src="logo-gmv.jpeg?v=260" alt="Logo GMV"><h1>GMV Gestão</h1><p id="brandSubtitle">Safra ativa</p></div><div class="nav"><button class="active" data-section="secDashboard">🏠 Dashboard</button><button data-section="secLancamento">🌧️ Lançar chuva</button><button data-section="secMapa">🗺️ Talhões</button><button data-section="secPlantio">🌱 Plantio</button><button data-section="secOperacoes">🚜 Operações</button><button data-section="secProducao">⚖️ Produção</button><button data-section="secRelatorios">📊 Relatórios</button><button data-section="secGraficos">📈 Gráficos</button><button data-section="secUsuarios">⚙️ Configurações</button></div><div class="status"><b>Sistema v27.18 • Sync corrigida</b><br>Salva no aparelho e faz backup às 09:00, 18:00 ou manualmente.<br><span id="syncStatusSide">Modo local</span></div></aside>
  <main class="card mapwrap section-anchor" id="secMapa" data-module="mapa"><div class="topbar"><div class="pill safra-bar"><b>Safra:</b> <select id="safraSelect"></select><button id="newSafraBtn" title="Nova safra">+</button></div><div class="pill"><b>Talhão:</b> <select id="fieldFilter" style="width:150px;display:inline-block;padding:6px;margin-left:6px"></select></div><div class="pill" id="syncStatus">🔴 Local</div><button class="secondary" id="syncNowBtn" title="Enviar e receber novidades agora">☁️ Fazer backup agora</button><div class="pill" id="prodTopResumo" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});" style="cursor:pointer"><b>⚖️ Produção:</b> 0 kg • Média 0 kg</div><button class="secondary" id="fitBtn">Centralizar fazenda</button><button class="secondary" onclick="document.getElementById('secProducao').scrollIntoView({behavior:'smooth',block:'start'});">⚖️ Produção</button><button class="secondary" id="backupBtn">Backup</button><button class="secondary" id="importBtn">Importar</button><button class="secondary" id="csvBtn">Excel/CSV</button><button class="secondary" id="printBtn">PDF</button></div><div id="map"></div></main>
  <section class="right">
   <div class="card panel section-anchor" id="secDashboard" data-module="dashboard"><h2>Dashboard da safra</h2><p class="small">Resumo automático do trabalho realizado. O período padrão mostra hoje e os 6 dias anteriores.</p><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 14px"><label for="dashboardPeriod" style="margin:0;font-weight:800">Período</label><select id="dashboardPeriod" style="width:auto;min-width:175px"><option value="today">Hoje</option><option value="7" selected>Últimos 7 dias</option><option value="30">Últimos 30 dias</option><option value="safra">Safra inteira</option></select><span class="small" id="dashboardPeriodLabel"></span></div><div class="grid2" id="dashboardCards"></div><h3>Operações no período</h3><div class="grid2" id="dashboardOperationCards"></div><h3>Últimos lançamentos</h3><div class="list" id="dashboardRecent"></div><h3>Alertas rápidos</h3><div class="list" id="dashboardAlerts"></div></div>
@@ -255,7 +255,13 @@ function mergeDeletedSync(remote){if(!remote||typeof remote!=='object')return;fo
 function isDeleted(type,item){return !!deletedSync?.[type]?.[syncArrayKey(item)]}
 function applyDeletedSync(){records=records.filter(x=>!isDeleted('records',x));plantios=plantios.filter(x=>!isDeleted('plantios',x));operacoes=operacoes.filter(x=>!isDeleted('operacoes',x));producoes=producoes.filter(x=>!isDeleted('producoes',x));fotos=fotos.filter(x=>!isDeleted('fotos',x))}
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
-function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString());updateBackupPanel()}
+let autoSyncTimer=null;
+function scheduleAutoSync(){
+ clearTimeout(autoSyncTimer);
+ if(!navigator.onLine)return;
+ autoSyncTimer=setTimeout(()=>{if(pendingSync()&&!syncBusy)performBackup(false)},2500);
+}
+function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString());updateBackupPanel();scheduleAutoSync()}
 function markClean(){localStorage.removeItem(dirtyKey);updateBackupPanel()}
 function pendingCount(){return pendingSync()?(records.length+plantios.length+operacoes.length+producoes.length+fotos.length):0}
 function cloudPayload(){return {records,plantios,operacoes,producoes,safras,users,deletions:deletedSync,accessLogs:JSON.parse(localStorage.getItem(accessLogKey)||'[]'),updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString(),backupMode:'manual-scheduled-v2716'}}
@@ -319,9 +325,23 @@ async function initBackupConnection(){
 }
 async function performBackup(manual=false){
  if(syncBusy)return false;if(!navigator.onLine){setSync(false,'Sem internet — backup ficou pendente');if(manual)toast('Sem internet. Os dados continuam salvos no aparelho.');return false}
- syncBusy=true;setSync(false,'Fazendo backup...');
- try{await initBackupConnection();await restoreBundledBackup();let sentMain=0;if(pendingSync()){await syncDoc.set(cloudPayload(),{merge:true});sentMain=1}const snap=await syncDoc.get({source:'server'});if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}const receivedPhotos=await loadRemotePhotos();if(sentMain){await syncDoc.set(cloudPayload(),{merge:true})}const sentPhotos=await uploadPendingPhotos();markClean();const now=new Date().toISOString();localStorage.setItem(lastBackupKey,now);setSync(true,'Backup concluído');updateBackupPanel();if(manual)toast('Backup concluído: '+sentPhotos+' foto(s) enviada(s), '+receivedPhotos+' recebida(s)');return true}
- catch(err){console.error('Falha no backup:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Backup não concluído — dados preservados no aparelho');if(manual)toast('Não foi possível concluir o backup agora');return false}
+ syncBusy=true;setSync(false,'Sincronizando...');
+ try{
+  await initBackupConnection();
+  await restoreBundledBackup();
+  // Segurança de sincronização: primeiro baixa e mescla o servidor; depois envia a união.
+  const snap=await syncDoc.get({source:'server'});
+  if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}
+  const receivedPhotos=await loadRemotePhotos();
+  const hadPending=pendingSync();
+  if(hadPending)await syncDoc.set(cloudPayload(),{merge:true});
+  const sentPhotos=await uploadPendingPhotos();
+  if(hadPending)markClean();
+  const now=new Date().toISOString();localStorage.setItem(lastBackupKey,now);setSync(true,'Sincronizado');updateBackupPanel();
+  if(manual)toast('Sincronização concluída: '+sentPhotos+' foto(s) enviada(s), '+receivedPhotos+' recebida(s)');
+  return true
+ }
+ catch(err){console.error('Falha no backup:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Sincronização não concluída — dados preservados no aparelho');if(manual)toast('Não foi possível sincronizar agora');return false}
  finally{syncBusy=false}
 }
 function scheduledSlotKey(date,hour){return date.toISOString().slice(0,10)+'_'+hour}
@@ -341,9 +361,10 @@ async function startLiveSync(){
    applyingRemote=true;
    try{
     applyRemoteData(snap.data()||{});
-    setSync(true,'Sincronizado agora');
     localStorage.setItem(lastBackupKey,new Date().toISOString());
     updateBackupPanel();
+    if(pendingSync()){setSync(false,'Enviando alterações locais...');scheduleAutoSync()}
+    else setSync(true,'Sincronizado agora');
    }finally{applyingRemote=false}
   },err=>{
    console.error('Falha na sincronização em tempo real:',err);
@@ -377,7 +398,7 @@ function setupBackupSystem(){
   else setSync(false,'Offline — dados salvos no aparelho');
  });
  setInterval(checkScheduledBackup,30000);checkScheduledBackup();
- window.addEventListener('online',async()=>{updateBackupPanel();await initialCloudSync();await startLiveSync()});
+ window.addEventListener('online',async()=>{updateBackupPanel();await initialCloudSync();await startLiveSync();scheduleAutoSync()});
  window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')})
 }
 function syncNow(){performBackup(true)}
@@ -471,17 +492,31 @@ function initWorkModules(){
  });
 }
 function workElements(cfg){const g=id=>document.getElementById(cfg.prefix+id);return {field:g('Field'),date:g('Date'),area:g('Area'),operador:g('Operador'),maquina:g('Maquina'),produto:g('Produto'),dose:g('Dose'),resp:g('Resp'),obs:g('Obs'),list:g('List')}}
+const workEditState={};
 function saveWorkModule(module){
  const cfg=WORK_MODULES[module],e=workElements(cfg),area=parseFloat(String(e.area.value||'').replace(',','.'));
  if(!e.date.value){toast('Informe a data');return} if(!area&&area!==0){toast('Informe a área em hectares');return}
- const total=fieldArea(e.field.value),feito=operacaoField(e.field.value,cfg.op);if(total&&feito+area>total+0.05){toast('Área maior que falta no talhão. Falta: '+fmtHa(Math.max(0,total-feito))+' ha');return}
- const rec={id:Date.now(),safraId:currentSafra,safraName:activeSafra().name,field:e.field.value,date:e.date.value,op:cfg.op,area,resp:e.resp.value||currentUser?.name||'',operador:e.operador.value||currentUser?.name||'',createdBy:currentUser?.name||'',device:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'Celular':'Computador',maquina:e.maquina.value,produto:e.produto.value,dose:e.dose.value,obs:e.obs.value,sourceModule:module,ts:new Date().toISOString()};
- operacoes.push(rec);saveStore();clearWorkModule(module);refresh();toast(cfg.label+' salva • '+rec.field);
+ const editingId=workEditState[module];
+ const old=editingId?operacoes.find(x=>String(x.id)===String(editingId)):null;
+ const total=fieldArea(e.field.value),feito=Math.max(0,operacaoField(e.field.value,cfg.op)-(old&&old.field===e.field.value?Number(old.area||0):0));if(total&&feito+area>total+0.05){toast('Área maior que falta no talhão. Falta: '+fmtHa(Math.max(0,total-feito))+' ha');return}
+ const rec={id:old?.id||Date.now(),safraId:old?.safraId||currentSafra,safraName:old?.safraName||activeSafra().name,field:e.field.value,date:e.date.value,op:cfg.op,area,resp:e.resp.value||currentUser?.name||'',operador:e.operador.value||currentUser?.name||'',createdBy:old?.createdBy||currentUser?.name||'',device:old?.device||(/Mobi|Android|iPhone/i.test(navigator.userAgent)?'Celular':'Computador'),maquina:e.maquina.value,produto:e.produto.value,dose:e.dose.value,obs:e.obs.value,sourceModule:module,ts:old?.ts||new Date().toISOString(),updatedAt:new Date().toISOString(),updatedBy:currentUser?.name||''};
+ if(old){operacoes=operacoes.map(x=>String(x.id)===String(old.id)?rec:x);delete workEditState[module]}else operacoes.push(rec);
+ saveStore();clearWorkModule(module);refresh();toast(cfg.label+(old?' atualizada':' salva')+' • '+rec.field);
 }
-function clearWorkModule(module){const e=workElements(WORK_MODULES[module]);['area','maquina','produto','dose','obs'].forEach(k=>{if(e[k])e[k].value=''});if(e.operador)e.operador.value=currentUser?.name||'';if(e.resp)e.resp.value=currentUser?.name||''}
+function clearWorkModule(module){delete workEditState[module];const e=workElements(WORK_MODULES[module]);['area','maquina','produto','dose','obs'].forEach(k=>{if(e[k])e[k].value=''});if(e.operador)e.operador.value=currentUser?.name||'';if(e.resp)e.resp.value=currentUser?.name||'';const cfg=WORK_MODULES[module];const btn=document.getElementById('save'+cfg.label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ç/g,'c')+'Btn');if(btn)btn.textContent='Salvar '+cfg.label.toLowerCase()}
+function editWorkModule(module,id){
+ const cfg=WORK_MODULES[module];if(!cfg)return;
+ if(!permission(module,'edit')){toast('Você não tem permissão para editar');return}
+ const o=operacoes.find(x=>String(x.id)===String(id));if(!o)return;
+ if(!isAdmin() && String(o.createdBy||o.resp||'')!==String(currentUser?.name||'')){toast('Você só pode editar seus próprios lançamentos');return}
+ const e=workElements(cfg);e.field.value=o.field||'';e.date.value=o.date||today;e.area.value=o.area??'';e.operador.value=o.operador||currentUser?.name||'';e.maquina.value=o.maquina||'';e.produto.value=o.produto||'';e.dose.value=o.dose||'';e.resp.value=o.resp||currentUser?.name||'';e.obs.value=o.obs||'';workEditState[module]=o.id;
+ const btn=document.getElementById('save'+cfg.label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ç/g,'c')+'Btn');if(btn)btn.textContent='Salvar alteração';
+ navigateSection('sec'+cfg.label.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/ç/g,'c'));toast('Edite os campos e toque em Salvar alteração');
+}
 function buildWorkModules(){
- Object.entries(WORK_MODULES).forEach(([module,cfg])=>{const e=workElements(cfg);if(!e.list)return;const rows=scopedOperacoes().filter(o=>o.op===cfg.op).sort((a,b)=>b.date.localeCompare(a.date)||String(b.ts).localeCompare(String(a.ts))).slice(0,60);e.list.innerHTML=rows.map(o=>`<div class="item"><b>${o.field}</b> • ${brDate(o.date)} • <b>${fmtHa(o.area)} ha</b><br>${o.operador?'Operador: '+o.operador:''}${o.maquina?' • Máquina: '+o.maquina:''}${o.produto?' • '+o.produto:''}${o.dose?' • '+o.dose:''}${o.obs?' • '+o.obs:''}<div class="mini-muted">Lançado por ${o.createdBy||o.resp||'--'} • ${o.device||''}</div></div>`).join('')||`<div class="item">Nenhum lançamento de ${cfg.label.toLowerCase()}.</div>`})
+ Object.entries(WORK_MODULES).forEach(([module,cfg])=>{const e=workElements(cfg);if(!e.list)return;const rows=scopedOperacoes().filter(o=>o.op===cfg.op).sort((a,b)=>b.date.localeCompare(a.date)||String(b.ts).localeCompare(String(a.ts))).slice(0,60);e.list.innerHTML=rows.map(o=>{const canEdit=permission(module,'edit')&&(isAdmin()||String(o.createdBy||o.resp||'')===String(currentUser?.name||''));return `<div class="item"><b>${o.field}</b> • ${brDate(o.date)} • <b>${fmtHa(o.area)} ha</b><br>${o.operador?'Operador: '+o.operador:''}${o.maquina?' • Máquina: '+o.maquina:''}${o.produto?' • '+o.produto:''}${o.dose?' • '+o.dose:''}${o.obs?' • '+o.obs:''}<div class="mini-muted">Lançado por ${o.createdBy||o.resp||'--'} • ${o.device||''}${o.updatedBy?' • Editado por '+o.updatedBy:''}</div>${canEdit?`<div class="actions-mini"><button class="mini-btn mini-edit" onclick="editWorkModule('${module}','${o.id}')">Editar</button></div>`:''}</div>`}).join('')||`<div class="item">Nenhum lançamento de ${cfg.label.toLowerCase()}.</div>`})
 }
+window.editWorkModule=editWorkModule;
 ['Aplicacao','Adubacao','Escarificacao','Grade'].forEach(name=>{const module=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const save=document.getElementById('save'+name+'Btn'),clear=document.getElementById('clear'+name+'Btn');if(save)save.onclick=()=>saveWorkModule(module);if(clear)clear.onclick=()=>clearWorkModule(module)});
 initWorkModules();
 
