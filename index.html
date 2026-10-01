@@ -586,9 +586,13 @@ function gerarFichaOperacaoSalva(id){
 function canEditOperacao(o){
  if(!o)return false;
  if(isAdmin())return true;
- const dono=String(o.createdBy||o.resp||o.operador||'')===String(currentUser?.name||'');
  const acesso=permission('operacoes','edit')||permission('operacoes','add');
  const opLiberada=!Array.isArray(currentUser?.allowedOps)||currentUser.allowedOps.includes(o.op);
+ // Na pulverização, o operador autorizado precisa conseguir abrir a ficha salva
+ // para lançar/atualizar bombas e abastecimentos, mesmo que a ficha tenha sido
+ // criada antes pelo escritório ou por outro usuário.
+ if(o.op==='Pulverização')return acesso&&opLiberada;
+ const dono=String(o.createdBy||o.resp||o.operador||'')===String(currentUser?.name||'');
  return dono&&acesso&&opLiberada;
 }
 function saveOperacao(){
@@ -650,7 +654,7 @@ function buildOperacoes(){
  const totalPorOp={}; scopedOperacoes().forEach(o=>totalPorOp[o.op]=(totalPorOp[o.op]||0)+Number(o.area||0));
  const faz=totalFarmArea();
  const resumo=Object.entries(totalPorOp).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="metric progress-card"><div class="progress-head"><b>${k}</b><span>${pct(v,faz).toFixed(1)}%</span></div><div><b>${fmtHa(v)}</b> ha</div><div class="progress"><i style="width:${pct(v,faz).toFixed(0)}%"></i></div><div class="progress-sub">de ${fmtHa(faz)} ha da fazenda</div></div>`).join('');
- const rows=scopedOperacoes().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).slice(0,60).map(o=>{const a=fieldArea(o.field); return `<div class="item"><b>${o.op}</b> • ${o.field} • ${brDate(o.date)} • <b>${fmtHa(o.area)} ha</b>${a?' de '+fmtHa(a)+' ha ('+pct(o.area,a).toFixed(1)+'%)':''}<br>${o.resp||''}${o.operador?' • Operador: '+o.operador:''}${o.maquina?' • Máquina: '+o.maquina:''}${o.tipoAplicacao?' • Tipo: '+o.tipoAplicacao:''}${Array.isArray(o.produtos)&&o.produtos.length?'<br><b>Produtos:</b> '+o.produtos.map(x=>`${x.produto} — ${x.dose} ${x.unidade} — total ${fmtQuantidade(x.total,x.unidadeTotal||unidadeTotal(x.unidade))}`).join(' | '):(o.produto?' • Produto: '+o.produto:'')+(o.dose?' • Dose: '+o.dose:'')}${o.obs?' • '+o.obs:''}${(canEditOperacao(o)||o.op==='Pulverização')?`<div class="actions-mini">${canEditOperacao(o)?`<button class="mini-btn mini-edit" onclick="editOperacao(${o.id})">Editar / lançar bombas</button>`:''}${o.op==='Pulverização'?`<button class="mini-btn" onclick="gerarFichaOperacaoSalva(${o.id})">📄 Ficha escritório</button>`:''}${isAdmin()?`<button class="mini-btn mini-del" onclick="deleteOperacao(${o.id})">Apagar</button>`:''}</div>`:''}</div>`}).join('') || '<div class="item">Nenhuma operação salva ainda.</div>';
+ const rows=scopedOperacoes().slice().sort((a,b)=>b.date.localeCompare(a.date)||b.ts.localeCompare(a.ts)).slice(0,60).map(o=>{const a=fieldArea(o.field); return `<div class="item"><b>${o.op}</b> • ${o.field} • ${brDate(o.date)} • <b>${fmtHa(o.area)} ha</b>${a?' de '+fmtHa(a)+' ha ('+pct(o.area,a).toFixed(1)+'%)':''}<br>${o.resp||''}${o.operador?' • Operador: '+o.operador:''}${o.maquina?' • Máquina: '+o.maquina:''}${o.tipoAplicacao?' • Tipo: '+o.tipoAplicacao:''}${Array.isArray(o.produtos)&&o.produtos.length?'<br><b>Produtos:</b> '+o.produtos.map(x=>`${x.produto} — ${x.dose} ${x.unidade} — total ${fmtQuantidade(x.total,x.unidadeTotal||unidadeTotal(x.unidade))}`).join(' | '):(o.produto?' • Produto: '+o.produto:'')+(o.dose?' • Dose: '+o.dose:'')}${o.obs?' • '+o.obs:''}${(canEditOperacao(o)||o.op==='Pulverização')?`<div class="actions-mini">${canEditOperacao(o)?`<button class="mini-btn mini-edit" onclick="editOperacao(${o.id})">✏️ Editar</button>`:''}${o.op==='Pulverização'?`<button class="mini-btn" onclick="gerarFichaOperacaoSalva(${o.id})">📄 Ficha escritório</button>`:''}${isAdmin()?`<button class="mini-btn mini-del" onclick="deleteOperacao(${o.id})">Apagar</button>`:''}</div>`:''}</div>`}).join('') || '<div class="item">Nenhuma operação salva ainda.</div>';
  opList.innerHTML=(resumo?`<div class="grid2" style="margin-bottom:10px">${resumo}</div>`:'')+rows; updateAreaHints();
 }
 
