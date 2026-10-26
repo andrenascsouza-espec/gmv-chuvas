@@ -265,30 +265,55 @@ function markDeletedMany(type,items){(Array.isArray(items)?items:[]).forEach(ite
 function mergeDeletedSync(remote){if(!remote||typeof remote!=='object')return;for(const [type,entries] of Object.entries(remote)){if(!entries||typeof entries!=='object')continue;const bucket=deletedBucket(type);for(const [id,ts] of Object.entries(entries)){const a=Date.parse(bucket[id]||0)||0,b=Date.parse(ts||0)||0;if(!bucket[id]||b>=a)bucket[id]=ts}}saveDeletedSync()}
 function isDeleted(type,item){return !!deletedSync?.[type]?.[syncArrayKey(item)]}
 function applyDeletedSync(){records=records.filter(x=>!isDeleted('records',x));plantios=plantios.filter(x=>!isDeleted('plantios',x));operacoes=operacoes.filter(x=>!isDeleted('operacoes',x));producoes=producoes.filter(x=>!isDeleted('producoes',x));fotos=fotos.filter(x=>!isDeleted('fotos',x))}
+
+/* Sincronização em tempo real v1.7
+   Cada lançamento é enviado em um documento separado. Assim uma alteração pequena
+   não reenvia todo o histórico e o limite de 1 MB do documento principal deixa
+   de bloquear a sincronização. O documento antigo continua sendo lido para
+   compatibilidade e é gravado apenas quando estiver em tamanho seguro. */
+const rtHashKey='gmv_rt_hashes_v17';
+const rtDeletedSentKey='gmv_rt_deleted_sent_v17';
+const RT_TYPES=['records','plantios','operacoes','producoes','safras','users'];
+let rtCollections={},rtUnsubscribers=[],rtSyncTimer=null,rtSyncBusy=false;
 function pendingSync(){return localStorage.getItem(dirtyKey)==='1'}
+function stableStringify(v){if(v===null||typeof v!=='object')return JSON.stringify(v);if(Array.isArray(v))return '['+v.map(stableStringify).join(',')+']';return '{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+stableStringify(v[k])).join(',')+'}'}
+function itemHash(v){let h=2166136261,s=stableStringify(v);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+function loadRtHashes(){try{return JSON.parse(localStorage.getItem(rtHashKey)||'{}')}catch(e){return {}}}
+function saveRtHashes(x){localStorage.setItem(rtHashKey,JSON.stringify(x))}
+function loadRtDeletedSent(){try{return JSON.parse(localStorage.getItem(rtDeletedSentKey)||'{}')}catch(e){return {}}}
+function saveRtDeletedSent(x){localStorage.setItem(rtDeletedSentKey,JSON.stringify(x))}
+function rtSafeId(v){return String(v??'').replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,900)||('id_'+Date.now())}
+function rtItemId(type,item){if(type==='safras')return rtSafeId(item.id||item.name);if(type==='users')return rtSafeId(item.id||item.login);return rtSafeId(syncArrayKey(item))}
+function getRtArray(type){if(type==='records')return records;if(type==='plantios')return plantios;if(type==='operacoes')return operacoes;if(type==='producoes')return producoes;if(type==='safras')return safras;if(type==='users')return users;if(type==='fotos')return fotos;return []}
+function setRtArray(type,arr){if(type==='records')records=arr;else if(type==='plantios')plantios=arr;else if(type==='operacoes')operacoes=arr;else if(type==='producoes')producoes=arr;else if(type==='safras')safras=arr;else if(type==='users'){users=arr;saveUsers(false)}else if(type==='fotos')fotos=arr}
+function rtTypeToNormalize(type){return type==='records'?'record':type==='plantios'?'plantio':type==='operacoes'?'operacao':type==='producoes'?'producao':null}
+function stripRtMeta(x){if(!x||typeof x!=='object')return x;const y={...x};delete y.__rtType;delete y.__rtUpdatedAt;return y}
+function rtChangedItems(){const hashes=loadRtHashes(),out=[];for(const type of RT_TYPES){const bucket=hashes[type]||{};for(const item of getRtArray(type)){if(!item)continue;const id=rtItemId(type,item),hash=itemHash(item);if(bucket[id]!==hash)out.push({type,id,item,hash})}}return out}
+function rtPendingDeletions(){const sent=loadRtDeletedSent(),out=[];for(const [type,bucket] of Object.entries(deletedSync||{})){for(const [id,ts] of Object.entries(bucket||{})){const key=type+'|'+id;if(sent[key]!==ts)out.push({type,id:String(id),ts,key})}}return out}
+function pendingPhotoCount(){const sent=getSentPhotos();return fotos.filter(f=>f&&f.img&&!sent.has(photoDocId(f))).length}
+function pendingCount(){return rtChangedItems().length+rtPendingDeletions().length+pendingPhotoCount()}
+function scheduleRealtimeSync(){clearTimeout(rtSyncTimer);if(!navigator.onLine)return;rtSyncTimer=setTimeout(()=>{if(pendingSync()&&!rtSyncBusy)syncRealtimeNow(false)},350)}
 let autoSyncTimer=null;
-function scheduleAutoSync(){
- clearTimeout(autoSyncTimer);
- if(!navigator.onLine)return;
- autoSyncTimer=setTimeout(()=>{if(pendingSync()&&!syncBusy)performBackup(false)},2500);
-}
-function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString());updateBackupPanel();scheduleAutoSync()}
-function markClean(){localStorage.removeItem(dirtyKey);updateBackupPanel()}
-function pendingCount(){return pendingSync()?(records.length+plantios.length+operacoes.length+producoes.length+fotos.length):0}
-function cloudPayload(){return {records,plantios,operacoes,producoes,safras,users,deletions:deletedSync,accessLogs:JSON.parse(localStorage.getItem(accessLogKey)||'[]'),updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString(),backupMode:'manual-scheduled-v2716'}}
+function scheduleAutoSync(){clearTimeout(autoSyncTimer);if(!navigator.onLine)return;autoSyncTimer=setTimeout(()=>{if(pendingSync()&&!rtSyncBusy)syncRealtimeNow(false)},1500)}
+function markDirty(){localStorage.setItem(dirtyKey,'1');localStorage.setItem(localUpdatedKey,new Date().toISOString());updateBackupPanel();scheduleRealtimeSync();scheduleAutoSync()}
+function markClean(){if(pendingCount()===0)localStorage.removeItem(dirtyKey);updateBackupPanel()}
+function cloudPayload(){return {records,plantios,operacoes,producoes,safras,users,deletions:deletedSync,accessLogs:JSON.parse(localStorage.getItem(accessLogKey)||'[]'),updatedAt:localStorage.getItem(localUpdatedKey)||new Date().toISOString(),backupMode:'realtime-v17'}}
 function photoDocId(f){return String(f.id||f.ts||('foto_'+f.date+'_'+f.field)).replace(/[^a-zA-Z0-9_-]/g,'_')}
 function getSentPhotos(){try{return new Set(JSON.parse(localStorage.getItem(sentPhotosKey)||'[]'))}catch(e){return new Set()}}
 function saveSentPhotos(set){localStorage.setItem(sentPhotosKey,JSON.stringify(Array.from(set)))}
+async function preparePhotoForCloud(f){
+ if(!f?.img||f.img.length<820000)return f;
+ try{return await new Promise((resolve,reject)=>{const img=new Image();img.onerror=reject;img.onload=()=>{let w=img.naturalWidth||img.width,h=img.naturalHeight||img.height;const scale=Math.min(1,1280/Math.max(w,h));w=Math.max(1,Math.round(w*scale));h=Math.max(1,Math.round(h*scale));const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d',{alpha:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);let q=.76,data=c.toDataURL('image/jpeg',q);while(data.length>700000&&q>.34){q-=.07;data=c.toDataURL('image/jpeg',q)}resolve({...f,img:data})};img.src=f.img})}catch(e){return f}
+}
 async function uploadPendingPhotos(){
- if(!photoCollection||!navigator.onLine||!fotos.length)return 0;
- const sentIds=getSentPhotos();let sent=0;
+ if(!photoCollection||!navigator.onLine||!fotos.length)return {sent:0,failed:0};
+ const sentIds=getSentPhotos();let sent=0,failed=0;
  for(const f of fotos){
-  if(!f||!f.img)continue;
-  const id=photoDocId(f);if(sentIds.has(id))continue;
-  await photoCollection.doc(id).set({...f,updatedAt:f.ts||new Date().toISOString()},{merge:true});
-  sentIds.add(id);sent++;
+  if(!f||!f.img)continue;const id=photoDocId(f);if(sentIds.has(id))continue;
+  try{const cloudPhoto=await preparePhotoForCloud(f);await photoCollection.doc(id).set({...cloudPhoto,updatedAt:f.ts||new Date().toISOString()},{merge:true});sentIds.add(id);sent++}
+  catch(err){failed++;console.warn('Foto ficou pendente para sincronização:',id,err)}
  }
- saveSentPhotos(sentIds);return sent;
+ saveSentPhotos(sentIds);return {sent,failed};
 }
 async function loadRemotePhotos(){
  if(!photoCollection)return 0;
@@ -298,18 +323,18 @@ async function loadRemotePhotos(){
 }
 function saveStore(upload=true){
  localStorage.setItem(storeKey,JSON.stringify(records));localStorage.setItem(plantKey,JSON.stringify(plantios));localStorage.setItem(opKey,JSON.stringify(operacoes));localStorage.setItem(prodKey,JSON.stringify(producoes));localStorage.setItem(fotoKey,JSON.stringify(fotos));localStorage.setItem(safraKey,JSON.stringify(safras));localStorage.setItem('gmv_safra_atual',currentSafra);
- if(upload&&!applyingRemote){markDirty();setSync(false,navigator.onLine?'Pendente para backup':'Offline — dados salvos no aparelho')}
+ if(upload&&!applyingRemote){markDirty();setSync(false,navigator.onLine?'Sincronizando alterações...':'Offline — dados salvos no aparelho')}
 }
-function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Backup concluído');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🟠 '+(msg||'Backup pendente');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?(msg||'Backup concluído'):(msg||'Dados salvos neste aparelho');updateBackupPanel()}
+function setSync(ok,msg){let t;if(ok)t='🟢 '+(msg||'Sincronizado');else if(!navigator.onLine)t='🟡 '+(msg||'Offline — salvo no aparelho');else t='🟠 '+(msg||'Sincronização pendente');const a=document.getElementById('syncStatus');if(a)a.textContent=t;const b=document.getElementById('syncStatusSide');if(b)b.textContent=ok?(msg||'Sincronizado'):(msg||'Dados salvos neste aparelho');updateBackupPanel()}
 function updateBackupPanel(){
  const last=localStorage.getItem(lastBackupKey);const el=document.getElementById('lastBackupInfo');if(el)el.textContent=last?new Date(last).toLocaleString('pt-BR'):'Ainda não realizado';
- const pe=document.getElementById('pendingBackupInfo');if(pe)pe.textContent=pendingSync()?String(records.length+plantios.length+operacoes.length+producoes.length+fotos.length):'0';
+ const pe=document.getElementById('pendingBackupInfo');if(pe)pe.textContent=String(pendingCount());
  const ie=document.getElementById('internetBackupInfo');if(ie)ie.textContent=navigator.onLine?'Conectado':'Sem internet';
  const ne=document.getElementById('nextBackupInfo');if(ne)ne.textContent=nextScheduledText();
 }
 function nextScheduledText(){const now=new Date();for(const h of [9,18]){const d=new Date(now);d.setHours(h,0,0,0);if(d>now)return d.toLocaleString('pt-BR')}const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(9,0,0,0);return d.toLocaleString('pt-BR')}
 function syncArrayKey(x){return String(x.id||x.ts||x.date+'_'+x.field+'_'+(x.mm||x.pesoKg||x.area||'')+'_'+(x.op||x.culture||''))}
-function syncTime(x){return Date.parse(x.ts||x.updatedAt||x.date||'')||0}
+function syncTime(x){return Date.parse(x.updatedAt||x.ts||x.date||'')||0}
 function mergeArrays(localArr,remoteArr){const map=new Map();[...(Array.isArray(remoteArr)?remoteArr:[]),...(Array.isArray(localArr)?localArr:[])].forEach(item=>{if(!item)return;const k=syncArrayKey(item),old=map.get(k);if(!old||syncTime(item)>=syncTime(old))map.set(k,item)});return Array.from(map.values())}
 function normalizeItem(x,type){
  if(!x||typeof x!=='object')return null;const y={...x};
@@ -332,27 +357,68 @@ async function restoreBundledBackup(){
 }
 async function initBackupConnection(){
  if(remoteReady)return true;
- const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_'))throw new Error('Firebase não configurado');if(typeof firebase==='undefined')throw new Error('Firebase não carregou');if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');photoCollection=syncDoc.collection('fotos');remoteReady=true;return true
+ const cfg=window.GMV_FIREBASE_CONFIG||{};if(!cfg.apiKey||String(cfg.apiKey).includes('COLE_'))throw new Error('Firebase não configurado');if(typeof firebase==='undefined')throw new Error('Firebase não carregou');if(!firebase.apps||!firebase.apps.length)firebase.initializeApp(cfg);db=firebase.firestore();try{firebase.firestore().enablePersistence({synchronizeTabs:true}).catch(()=>{})}catch(e){}syncDoc=db.collection('fazendas').doc('matao').collection('sistemas').doc('gmv_gestao');photoCollection=syncDoc.collection('fotos');RT_TYPES.forEach(type=>rtCollections[type]=syncDoc.collection('rt_'+type));rtCollections.deletions=syncDoc.collection('rt_deletions');remoteReady=true;return true
 }
-async function performBackup(manual=false){
- if(syncBusy)return false;if(!navigator.onLine){setSync(false,'Sem internet — backup ficou pendente');if(manual)toast('Sem internet. Os dados continuam salvos no aparelho.');return false}
- syncBusy=true;setSync(false,'Sincronizando...');
+async function commitOps(ops){for(let i=0;i<ops.length;i+=400){const batch=db.batch();ops.slice(i,i+400).forEach(op=>batch.set(op.ref,op.data,{merge:true}));await batch.commit()}}
+async function syncRealtimeNow(manual=false){
+ if(rtSyncBusy)return false;if(!navigator.onLine)return false;rtSyncBusy=true;
  try{
   await initBackupConnection();
-  await restoreBundledBackup();
-  // Segurança de sincronização: primeiro baixa e mescla o servidor; depois envia a união.
-  const snap=await syncDoc.get({source:'server'});
-  if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}
+  const changes=rtChangedItems(),deletions=rtPendingDeletions(),ops=[],now=new Date().toISOString();
+  for(const c of changes)ops.push({ref:rtCollections[c.type].doc(c.id),data:{...c.item,__rtType:c.type,__rtUpdatedAt:now}});
+  for(const d of deletions)ops.push({ref:rtCollections.deletions.doc(rtSafeId(d.type+'__'+d.id)),data:{type:d.type,itemId:d.id,deletedAt:d.ts,__rtUpdatedAt:now}});
+  if(ops.length)await commitOps(ops);
+  const hashes=loadRtHashes();for(const c of changes){if(!hashes[c.type])hashes[c.type]={};hashes[c.type][c.id]=c.hash}saveRtHashes(hashes);
+  const sentDel=loadRtDeletedSent();for(const d of deletions)sentDel[d.key]=d.ts;saveRtDeletedSent(sentDel);
+  const ph=await uploadPendingPhotos();
+  if(pendingCount()===0){localStorage.removeItem(dirtyKey);localStorage.setItem(lastBackupKey,new Date().toISOString());setSync(true,'Sincronizado agora')}else setSync(false,ph.failed?'Dados sincronizados • foto pendente':'Sincronização pendente');
+  updateBackupPanel();return true;
+ }catch(err){console.error('Falha na sincronização em tempo real:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Sincronização não concluída — dados preservados');return false}
+ finally{rtSyncBusy=false}
+}
+function applyRtItem(type,data){
+ const remoteRtTime=Date.parse(data?.__rtUpdatedAt||0)||0,item=stripRtMeta(data),id=rtItemId(type,item),hashes=loadRtHashes(),bucket=hashes[type]||{},arr=getRtArray(type),idx=arr.findIndex(x=>rtItemId(type,x)===id),local=idx>=0?arr[idx]:null;
+ // Não restaura registros já excluídos enquanto a exclusão aguarda sincronização.
+ if(deletedSync?.[type]?.[syncArrayKey(item)])return false;
+ if(local&&bucket[id]&&itemHash(local)!==bucket[id])return false;
+ if(local&&!bucket[id]&&pendingSync()){const localChangeTime=Date.parse(localStorage.getItem(localUpdatedKey)||0)||0;if(localChangeTime>remoteRtTime)return false;}
+ const normalized=rtTypeToNormalize(type)?normalizeItem(item,rtTypeToNormalize(type)):item;
+ if(idx>=0)arr[idx]=normalized;else arr.push(normalized);setRtArray(type,arr);if(!hashes[type])hashes[type]={};hashes[type][id]=itemHash(normalized);saveRtHashes(hashes);return true
+}
+function applyRtDeletion(data){
+ if(!data?.type||!data?.itemId)return false;
+ const type=data.type,id=rtSafeId(data.itemId),arr=getRtArray(type);
+ if(!Array.isArray(arr))return false;
+ // Registra a exclusão mesmo se o item ainda não chegou neste aparelho.
+ const bucket=deletedBucket(type),ts=data.deletedAt||new Date().toISOString();
+ const prev=Date.parse(bucket[data.itemId]||0)||0;
+ if(Date.parse(ts||0)>=prev)bucket[data.itemId]=ts;
+ saveDeletedSync();
+ const filtered=arr.filter(x=>rtItemId(type,x)!==id);
+ if(filtered.length===arr.length)return false;
+ setRtArray(type,filtered);return true;
+}
+async function pullRealtimeOnce(){
+ await initBackupConnection();let changed=false;applyingRemote=true;
+ try{for(const type of RT_TYPES){const snap=await rtCollections[type].get();snap.forEach(d=>{if(applyRtItem(type,d.data()))changed=true})}const ds=await rtCollections.deletions.get();ds.forEach(d=>{if(applyRtDeletion(d.data()))changed=true});if(changed){applyDeletedSync();ensureSafraIds();fillSafraSelect();saveStore(false);refresh()}}
+ finally{applyingRemote=false}return changed
+}
+async function performBackup(manual=false){
+ if(syncBusy)return false;if(!navigator.onLine){setSync(false,'Sem internet — sincronização ficou pendente');if(manual)toast('Sem internet. Os dados continuam salvos no aparelho.');return false}
+ syncBusy=true;setSync(false,'Sincronizando...');
+ try{
+  await initBackupConnection();await restoreBundledBackup();
+  // Lê o documento antigo apenas para manter compatibilidade com versões anteriores.
+  try{const snap=await syncDoc.get({source:'server'});if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}}catch(e){console.warn('Documento legado não pôde ser lido:',e)}
+  await pullRealtimeOnce();
+  const ok=await syncRealtimeNow(manual);if(!ok)throw new Error('Falha na sincronização em tempo real');
   const receivedPhotos=await loadRemotePhotos();
-  const hadPending=pendingSync();
-  if(hadPending)await syncDoc.set(cloudPayload(),{merge:true});
-  const sentPhotos=await uploadPendingPhotos();
-  if(hadPending)markClean();
-  const now=new Date().toISOString();localStorage.setItem(lastBackupKey,now);setSync(true,'Sincronizado');updateBackupPanel();
-  if(manual)toast('Sincronização concluída: '+sentPhotos+' foto(s) enviada(s), '+receivedPhotos+' recebida(s)');
+  // Só grava o pacote antigo se ele estiver em tamanho seguro. O tempo real não depende dele.
+  try{const payload=cloudPayload();if(JSON.stringify(payload).length<700000)await syncDoc.set(payload,{merge:true});else console.warn('Backup legado grande; dados preservados nas coleções em tempo real.')}catch(e){console.warn('Backup legado ignorado; tempo real já sincronizado:',e)}
+  const now=new Date().toISOString();localStorage.setItem(lastBackupKey,now);markClean();setSync(pendingCount()===0,pendingCount()===0?'Sincronizado':'Sincronizado • item pendente');updateBackupPanel();
+  if(manual)toast(pendingCount()===0?'Sincronização concluída':'Dados sincronizados; existe item pendente');
   return true
- }
- catch(err){console.error('Falha no backup:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Sincronização não concluída — dados preservados no aparelho');if(manual)toast('Não foi possível sincronizar agora');return false}
+ }catch(err){console.error('Falha no backup:',err);setSync(false,err&&err.code==='resource-exhausted'?'Cota temporariamente esgotada':'Sincronização não concluída — dados preservados no aparelho');if(manual)toast('Não foi possível sincronizar agora');return false}
  finally{syncBusy=false}
 }
 function scheduledSlotKey(date,hour){return date.toISOString().slice(0,10)+'_'+hour}
@@ -361,57 +427,53 @@ function markSlotDone(key){const x=getCompletedSlots();x[key]=true;localStorage.
 async function checkScheduledBackup(){
  const now=new Date();const h=now.getHours();const m=now.getMinutes();if(![9,18].includes(h)||m>15)return;const key=scheduledSlotKey(now,h);const done=getCompletedSlots();if(done[key])return;if(!navigator.onLine)return;const ok=await performBackup(false);if(ok)markSlotDone(key)
 }
-let liveSyncUnsubscribe=null;
 async function startLiveSync(){
  if(!navigator.onLine)return false;
  try{
-  await initBackupConnection();
-  if(liveSyncUnsubscribe)return true;
-  liveSyncUnsubscribe=syncDoc.onSnapshot({includeMetadataChanges:false},snap=>{
-   if(!snap.exists)return;
-   applyingRemote=true;
-   try{
-    applyRemoteData(snap.data()||{});
-    localStorage.setItem(lastBackupKey,new Date().toISOString());
-    updateBackupPanel();
-    if(pendingSync()){setSync(false,'Enviando alterações locais...');scheduleAutoSync()}
-    else setSync(true,'Sincronizado agora');
-   }finally{applyingRemote=false}
-  },err=>{
-   console.error('Falha na sincronização em tempo real:',err);
-   liveSyncUnsubscribe=null;
-   setSync(false,'Sincronização interrompida');
-  });
-  return true;
- }catch(e){
-  console.error('Não foi possível iniciar a sincronização:',e);
-  setSync(false,'Sem sincronização com a nuvem');
-  return false;
- }
+  await initBackupConnection();if(rtUnsubscribers.length)return true;
+  for(const type of RT_TYPES){rtUnsubscribers.push(rtCollections[type].onSnapshot({includeMetadataChanges:false},snap=>{let changed=false;applyingRemote=true;try{snap.docChanges().forEach(ch=>{if(ch.type!=='removed'&&applyRtItem(type,ch.doc.data()))changed=true});if(changed){applyDeletedSync();ensureSafraIds();fillSafraSelect();saveStore(false);refresh();localStorage.setItem(lastBackupKey,new Date().toISOString());setSync(pendingCount()===0,'Sincronizado agora')}}finally{applyingRemote=false}},err=>{console.error('Falha live '+type,err);setSync(false,'Sincronização interrompida');for(const unsub of rtUnsubscribers.splice(0)){try{unsub()}catch(_){}}}))}
+  rtUnsubscribers.push(rtCollections.deletions.onSnapshot({includeMetadataChanges:false},snap=>{let changed=false;applyingRemote=true;try{snap.docChanges().forEach(ch=>{if(ch.type!=='removed'&&applyRtDeletion(ch.doc.data()))changed=true});if(changed){applyDeletedSync();saveStore(false);refresh();localStorage.setItem(lastBackupKey,new Date().toISOString());setSync(pendingCount()===0,'Sincronizado agora')}}finally{applyingRemote=false}},err=>{console.error('Falha live deletions',err);setSync(false,'Sincronização interrompida');for(const unsub of rtUnsubscribers.splice(0)){try{unsub()}catch(_){}}}));
+  return true
+ }catch(e){console.error('Não foi possível iniciar a sincronização:',e);setSync(false,'Sem sincronização com a nuvem');return false}
 }
 async function initialCloudSync(){
  if(!navigator.onLine)return false;
  try{
   await initBackupConnection();
-  if(pendingSync()){await performBackup(false);return true}
-  const snap=await syncDoc.get({source:'server'});
-  if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}
-  await loadRemotePhotos();
-  if(pendingSync())await performBackup(false);
-  else setSync(true,'Sincronizado');
-  return true;
+  try{const snap=await syncDoc.get({source:'server'});if(snap.exists){applyingRemote=true;try{applyRemoteData(snap.data()||{})}finally{applyingRemote=false}}}catch(e){console.warn('Falha ao ler backup legado:',e)}
+  await pullRealtimeOnce();await loadRemotePhotos();
+  // Na primeira abertura da versão nova, publica o estado local nas coleções por registro.
+  localStorage.setItem(dirtyKey,'1');const sent=await syncRealtimeNow(false);
+  if(!sent){setSync(false,'Sincronização pendente — dados preservados');return false}
+  setSync(pendingCount()===0,pendingCount()===0?'Sincronizado':'Sincronização pendente');return true
  }catch(e){console.error('Falha na sincronização inicial:',e);setSync(false,'Dados salvos neste aparelho');return false}
 }
-function setupBackupSystem(){
- restoreBundledBackup().finally(async()=>{
+// iOS pode suspender scripts e conexões de rede quando o app sai de primeiro plano.
+// Ao voltar, verificar a nuvem sem limpar dados nem depender de abrir pelo Safari.
+let resumeSyncRunning=false, lastResumeAttempt=0;
+async function resumeSyncWhenActive(force=false){
+ if(document.visibilityState==='hidden'||!navigator.onLine)return false;
+ if(resumeSyncRunning)return false;
+ const now=Date.now();if(!force&&now-lastResumeAttempt<12000)return false;
+ resumeSyncRunning=true;lastResumeAttempt=now;
+ try{
   updateBackupPanel();
-  if(navigator.onLine){await initialCloudSync();await startLiveSync()}
-  else setSync(false,'Offline — dados salvos no aparelho');
- });
- setInterval(checkScheduledBackup,30000);checkScheduledBackup();
- window.addEventListener('online',async()=>{updateBackupPanel();await initialCloudSync();await startLiveSync();scheduleAutoSync()});
- window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')})
+  const ok=await initialCloudSync();
+  if(!rtUnsubscribers.length)await startLiveSync();
+  if(!ok)setSync(false,'Sincronização pendente — tente Fazer backup agora');
+  return ok;
+ }finally{resumeSyncRunning=false}
 }
+function setupBackupSystem(){
+ restoreBundledBackup().finally(async()=>{updateBackupPanel();if(navigator.onLine){await resumeSyncWhenActive(true)}else setSync(false,'Offline — dados salvos no aparelho')});
+ setInterval(checkScheduledBackup,30000);checkScheduledBackup();
+ window.addEventListener('online',()=>{resumeSyncWhenActive(true)});
+ window.addEventListener('offline',()=>{updateBackupPanel();setSync(false,'Offline — dados salvos no aparelho')});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')resumeSyncWhenActive()});
+ window.addEventListener('pageshow',()=>resumeSyncWhenActive());
+ window.addEventListener('focus',()=>resumeSyncWhenActive());
+}
+
 function syncNow(){performBackup(true)}
 function scopedRecords(){return records.filter(r=>r.safraId===currentSafra)}
 function scopedPlantios(){return plantios.filter(p=>p.safraId===currentSafra)}
@@ -594,8 +656,9 @@ function canEditOperacao(o){
  // para lançar/atualizar bombas e abastecimentos, mesmo que a ficha tenha sido
  // criada antes pelo escritório ou por outro usuário.
  if(o.op==='Pulverização')return acesso&&opLiberada;
- const dono=String(o.createdBy||o.resp||o.operador||'')===String(currentUser?.name||'');
- return dono&&acesso&&opLiberada;
+ // A permissão de edição do módulo permite editar operações autorizadas,
+ // mesmo quando o lançamento foi feito por outro aparelho/usuário.
+ return permission('operacoes','edit')&&opLiberada;
 }
 function saveOperacao(){
  const area=parseFloat(String(opArea.value).replace(',','.'));
@@ -636,7 +699,16 @@ function clearOperacaoCampos(){
  limparProdutosPulv();
  if(saveOpBtn)saveOpBtn.textContent='Salvar operação';
 }
-function deleteOperacao(id){if(!requireAdmin())return; if(confirm('Apagar somente esta operação?')){const item=operacoes.find(o=>o.id===id);if(item)markDeleted('operacoes',item);operacoes=operacoes.filter(o=>o.id!==id);saveStore();refresh();toast('Operação apagada e sincronizada')}}
+function deleteOperacao(id){
+ if(!requireAdmin())return;
+ const item=operacoes.find(o=>String(o.id)===String(id));
+ if(!item){toast('Operação não encontrada. Atualize a lista e tente novamente.');return}
+ if(!confirm('Apagar somente esta operação?'))return;
+ markDeleted('operacoes',item);
+ operacoes=operacoes.filter(o=>String(o.id)!==String(id));
+ if(String(operacaoEditingId)===String(id))clearOperacaoCampos();
+ saveStore();refresh();toast('Operação apagada neste aparelho. Sincronização pendente até confirmar envio.');
+}
 function editOperacao(id){
  const o=operacoes.find(x=>String(x.id)===String(id)); if(!o)return;
  if(!canEditOperacao(o)){toast('Você só pode editar os seus próprios lançamentos');return}
